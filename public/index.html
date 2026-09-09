@@ -173,7 +173,12 @@
 
           <div class="form-group">
             <label for="confirmNewPassword">Confirmar Nueva Contraseña</label>
-            <input type="password" id="confirmNewPassword" placeholder="Repite la nueva contraseña" minlength="6" required>
+            <div class="password-input-wrap">
+              <input type="password" id="confirmNewPassword" placeholder="Repite la nueva contraseña" minlength="6" required>
+              <button type="button" class="btn-toggle-pwd" data-target="confirmNewPassword" title="Mostrar/ocultar">
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
           </div>
 
           <button type="submit" class="btn-primary btn-danger-gradient w-full" id="btnResetSubmit">

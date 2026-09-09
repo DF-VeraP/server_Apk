@@ -1503,3 +1503,44 @@ body {
     opacity: 1;
   }
 }
+
+/* Campos de contraseña con icono de visualización (ojo) */
+.password-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.password-input-wrap input {
+  width: 100%;
+  padding-right: 44px !important;
+}
+
+.password-input-wrap .btn-toggle-pwd {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  line-height: 1;
+  transition: color 0.2s ease, transform 0.2s ease;
+  z-index: 5;
+}
+
+.password-input-wrap .btn-toggle-pwd:hover {
+  color: var(--primary-400);
+}
+
+.password-input-wrap .btn-toggle-pwd:focus {
+  outline: none;
+  color: var(--primary-400);
+}

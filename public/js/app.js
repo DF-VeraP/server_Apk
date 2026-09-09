@@ -255,15 +255,18 @@
       sessionStorage.setItem('nexus_apk_banner_dismissed', 'true');
     });
 
-    // Toggle de visibilidad de contraseñas
-    document.querySelectorAll('.btn-toggle-pwd').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const input = document.getElementById(btn.dataset.target);
-        if (input) {
-          input.type = input.type === 'password' ? 'text' : 'password';
-          btn.innerHTML = input.type === 'password' ? '<i class="bi bi-eye"></i>' : '<i class="bi bi-eye-slash"></i>';
-        }
-      });
+    // Toggle universal de visibilidad de contraseñas (Ojo abrir / cerrar)
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('.btn-toggle-pwd');
+      if (!btn) return;
+      const targetId = btn.getAttribute('data-target');
+      const input = document.getElementById(targetId);
+      if (input) {
+        const isCurrentlyPassword = input.type === 'password';
+        input.type = isCurrentlyPassword ? 'text' : 'password';
+        btn.innerHTML = isCurrentlyPassword ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
+        btn.setAttribute('title', isCurrentlyPassword ? 'Ocultar contraseña' : 'Ver contraseña');
+      }
     });
 
     // Pestañas Login / Registro
