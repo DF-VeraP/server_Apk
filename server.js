@@ -146,6 +146,11 @@ async function inicializarBaseDeDatos() {
       VALUES ('admin@contactos.com', '$2a$10$eE61K0Wf9G4hX.rLgY6.kOPeE953sDqfFomxkWgRau5k6G0y4uJae')
       ON CONFLICT (email) DO NOTHING;
     `);
+
+    try {
+      await pool.query('ALTER TABLE public.usuarios ALTER COLUMN token_expira TYPE TIMESTAMPTZ;');
+    } catch (_) {}
+
     console.log('[OK] Tablas de base de datos verificadas e inicializadas correctamente.');
   } catch (err) {
     console.error('[WARN] Error al inicializar tablas en PostgreSQL:', err.message);
@@ -269,13 +274,12 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
       if (nuevosIntentos >= 4) {
         // Bloquear cuenta y generar token de alerta
         const tokenSeguridad = crypto.randomBytes(32).toString('hex');
-        const tokenExpira = new Date(Date.now() + 2 * 60 * 60 * 1000); // 2 horas
 
         await pool.query(
           `UPDATE usuarios 
-           SET intentos_fallidos = $1, bloqueado = TRUE, token_seguridad = $2, token_expira = $3
-           WHERE id = $4`,
-          [nuevosIntentos, tokenSeguridad, tokenExpira, usuario.id]
+           SET intentos_fallidos = $1, bloqueado = TRUE, token_seguridad = $2, token_expira = (NOW() + INTERVAL '2 hours')
+           WHERE id = $3`,
+          [nuevosIntentos, tokenSeguridad, usuario.id]
         );
 
         // Disparar correo de alerta con Sí / No
@@ -339,10 +343,12 @@ app.get('/api/auth/seguridad/respuesta', async (req, res) => {
     return res.status(400).send('Parámetros inválidos');
   }
 
+  const cleanToken = token.trim();
+
   try {
     const userRes = await pool.query(
-      'SELECT * FROM usuarios WHERE token_seguridad = $1 AND token_expira > NOW()',
-      [token]
+      'SELECT * FROM usuarios WHERE token_seguridad = $1 AND (token_expira > NOW() OR token_expira IS NULL)',
+      [cleanToken]
     );
 
     if (userRes.rows.length === 0) {
@@ -421,16 +427,15 @@ app.post('/api/auth/olvide-password', emailActionsLimiter, async (req, res) => {
 
     const usuario = userRes.rows[0];
 
-    // Generar token criptográfico y expiración (1 hora)
+    // Generar token criptográfico y expiración (2 horas en el reloj de Postgres)
     const tokenSeguridad = crypto.randomBytes(32).toString('hex');
-    const tokenExpira = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
 
-    // Guardar token en la base de datos
+    // Guardar token en la base de datos usando NOW() interno de PostgreSQL
     await pool.query(
       `UPDATE usuarios 
-       SET token_seguridad = $1, token_expira = $2 
-       WHERE id = $3`,
-      [tokenSeguridad, tokenExpira, usuario.id]
+       SET token_seguridad = $1, token_expira = (NOW() + INTERVAL '2 hours') 
+       WHERE id = $2`,
+      [tokenSeguridad, usuario.id]
     );
 
     // Enviar correo con asunto, descripción, advertencia y botón de restablecer
@@ -454,10 +459,12 @@ app.get('/api/auth/verificar-token', async (req, res) => {
     return res.status(400).json({ valido: false, error: 'Token no proporcionado' });
   }
 
+  const cleanToken = token.trim();
+
   try {
     const userRes = await pool.query(
-      'SELECT id, email FROM usuarios WHERE token_seguridad = $1 AND token_expira > NOW()',
-      [token]
+      'SELECT id, email FROM usuarios WHERE token_seguridad = $1 AND (token_expira > NOW() OR token_expira IS NULL)',
+      [cleanToken]
     );
 
     if (userRes.rows.length === 0) {
@@ -482,10 +489,12 @@ app.post('/api/auth/restablecer-password', async (req, res) => {
     return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
   }
 
+  const cleanToken = token.trim();
+
   try {
     const userRes = await pool.query(
-      'SELECT id, email FROM usuarios WHERE token_seguridad = $1 AND token_expira > NOW()',
-      [token]
+      'SELECT id, email FROM usuarios WHERE token_seguridad = $1 AND (token_expira > NOW() OR token_expira IS NULL)',
+      [cleanToken]
     );
 
     if (userRes.rows.length === 0) {
