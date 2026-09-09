@@ -14,7 +14,7 @@ RUN apk add --no-cache tzdata
 # Definir zona horaria
 ENV TZ=America/Bogota
 ENV NODE_ENV=production
-ENV PORT=3000
+ENV PORT=4000
 
 # Copiar archivos de dependencias
 COPY package*.json ./
@@ -29,7 +29,7 @@ COPY public/ ./public/
 COPY db_migration.sql ./
 
 # Exponer el puerto de la aplicación
-EXPOSE 3000
+EXPOSE 4000
 
 # Usuario sin privilegios por seguridad
 USER node

@@ -11,7 +11,7 @@ const { Pool } = require('pg');
 const { enviarCorreoRegistro, enviarCorreoAlertaSeguridad, enviarCorreoRecuperacion } = require('./services/emailService');
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 4000;
 const jwtSecret = process.env.JWT_SECRET || 'clave_secreta_default_contactos_2026';
 
 // 1. CABECERAS DE SEGURIDAD HTTP (HELMET)
@@ -33,7 +33,7 @@ app.use(
 );
 
 // 2. CONTROL DE ORIGEN CORS (Protección contra solicitudes cruzadas no autorizadas)
-const rawAllowedOrigins = process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://127.0.0.1:3000,capacitor://localhost';
+const rawAllowedOrigins = process.env.ALLOWED_ORIGINS || 'http://localhost:4000,http://127.0.0.1:4000,capacitor://localhost';
 const allowedOrigins = rawAllowedOrigins.split(',').map(o => o.trim());
 
 app.use(cors({

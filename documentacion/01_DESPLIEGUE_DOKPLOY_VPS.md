@@ -28,7 +28,7 @@ Despliega simultáneamente la aplicación Node.js y el contenedor de base de dat
    ```env
    APP_URL=https://contactos.tudominio.com
    NODE_ENV=production
-   PORT=3000
+   PORT=4000
    DB_HOST=postgres_db
    DB_PORT=5432
    DB_NAME=bd_contacto
@@ -45,7 +45,7 @@ Despliega simultáneamente la aplicación Node.js y el contenedor de base de dat
 6. En la pestaña **Domains**, añade tu dominio:
    - **Host:** `contactos.tudominio.com`
    - **Path:** `/`
-   - **Container Port:** `3000`
+   - **Container Port:** `4000`
    - **HTTPS / SSL:** Activa la casilla de SSL (Dokploy solicitará el certificado gratuito con Let's Encrypt automáticamente).
 7. Haz clic en **"Deploy"**.
 
@@ -65,7 +65,7 @@ Si prefieres administrar la base de datos PostgreSQL desde la sección nativa de
    - Tipo de build: **Dockerfile**.
    - Dokploy usará el archivo `Dockerfile` incluido en la raíz.
    - En variables de entorno, coloca la conexión interna de PostgreSQL (`DB_HOST` será el nombre interno del servicio de base de datos generado por Dokploy).
-   - Configura el dominio en el puerto `3000` con HTTPS y despliega.
+   - Configura el dominio en el puerto `4000` con HTTPS y despliega.
 
 ---
 

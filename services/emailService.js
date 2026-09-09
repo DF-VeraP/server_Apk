@@ -27,7 +27,7 @@ function createTransporter() {
  */
 async function enviarCorreoRegistro(email, passwordGenerada) {
   const transporter = createTransporter();
-  const appUrl = process.env.APP_URL || 'http://localhost:3000';
+  const appUrl = process.env.APP_URL || 'http://localhost:4000';
   const from = process.env.EMAIL_FROM || '"Sistema de Contactos" <no-reply@contactos.com>';
 
   const html = `
@@ -104,7 +104,7 @@ async function enviarCorreoRegistro(email, passwordGenerada) {
  */
 async function enviarCorreoAlertaSeguridad(email, token) {
   const transporter = createTransporter();
-  const appUrl = process.env.APP_URL || 'http://localhost:3000';
+  const appUrl = process.env.APP_URL || 'http://localhost:4000';
   const from = process.env.EMAIL_FROM || '"Seguridad Contactos" <no-reply@contactos.com>';
 
   const enlaceSi = `${appUrl}/api/auth/seguridad/respuesta?token=${token}&opcion=si`;
@@ -194,7 +194,7 @@ async function enviarCorreoAlertaSeguridad(email, token) {
  */
 async function enviarCorreoRecuperacion(email, token) {
   const transporter = createTransporter();
-  const appUrl = process.env.APP_URL || 'http://localhost:3000';
+  const appUrl = process.env.APP_URL || 'http://localhost:4000';
   const from = process.env.EMAIL_FROM || '"Sistema de Contactos" <no-reply@contactos.com>';
   const enlaceRestablecer = `${appUrl}/restablecer.html?token=${token}`;
 

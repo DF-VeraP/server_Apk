@@ -34,9 +34,9 @@ services:
       postgres_db:
         condition: service_healthy
     environment:
-      PORT: 3000
+      PORT: 4000
       NODE_ENV: production
-      APP_URL: ${APP_URL:-http://localhost:3000}
+      APP_URL: ${APP_URL:-http://localhost:4000}
       DB_HOST: postgres_db
       DB_PORT: 5432
       DB_NAME: ${DB_NAME:-bd_contacto}
@@ -50,7 +50,7 @@ services:
       EMAIL_PASS: ${EMAIL_PASS:-}
       EMAIL_FROM: ${EMAIL_FROM:-Sistema de Contactos <no-reply@dominio.com>}
     ports:
-      - "3000:3000"
+      - "4000:4000"
     networks:
       - nexus_network
 

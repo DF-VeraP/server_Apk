@@ -27,9 +27,9 @@ El proyecto está desarrollado en **Kotlin** con **Retrofit 2**, **Gson**, **OkH
 ### 2.1. Gestión de Sesión y URL Dinámica (`SessionManager.kt`)
 - Administra las credenciales en `SharedPreferences`.
 - Permite configurar la dirección del backend de forma interactiva desde la pantalla de login:
-  - **Emulador de Android Studio:** `http://10.0.2.2:3000/` (apunta a localhost de tu PC).
-  - **Teléfono Físico en Wi-Fi:** `http://192.168.1.X:3000/` (apunta a tu máquina en la red local).
-  - **Producción en VPS Dokploy:** `https://contactos.tudominio.com/` o `http://IP_VPS:3000/`.
+  - **Emulador de Android Studio:** `http://10.0.2.2:4000/` (apunta a localhost de tu PC).
+  - **Teléfono Físico en Wi-Fi:** `http://192.168.1.X:4000/` (apunta a tu máquina en la red local).
+  - **Producción en VPS Dokploy:** `https://contactos.tudominio.com/` o `http://IP_VPS:4000/`.
 
 ### 2.2. Inyección Automática de Token JWT (`RetrofitClient.kt`)
 - Un interceptor de red de OkHttp inyecta automáticamente la cabecera:
