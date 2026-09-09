@@ -413,16 +413,51 @@ body {
   position: relative;
   display: flex;
   align-items: center;
+  width: 100%;
+}
+
+.password-input-wrap input {
+  width: 100%;
+  padding-right: 46px !important;
 }
 
 .btn-toggle-pwd {
   position: absolute;
-  right: 12px;
-  background: none;
-  border: none;
-  color: var(--text-subtle);
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  color: #94a3b8 !important; /* Gris pizarra elegante idéntico a Android */
   cursor: pointer;
-  font-size: 16px;
+  padding: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  line-height: 1;
+  transition: color 0.2s ease, transform 0.15s ease;
+  z-index: 5;
+}
+
+.btn-toggle-pwd i {
+  color: #94a3b8 !important; /* Asegura que el icono no sea blanco puro */
+  font-size: 1.15rem;
+  transition: color 0.2s ease;
+}
+
+.btn-toggle-pwd:hover,
+.btn-toggle-pwd:focus {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+.btn-toggle-pwd:hover i,
+.btn-toggle-pwd:focus i {
+  color: var(--primary-400, #38bdf8) !important; /* Cian eléctrico al pasar el ratón */
 }
 
 .form-sub-action {
@@ -1502,45 +1537,4 @@ body {
     transform: translateY(0);
     opacity: 1;
   }
-}
-
-/* Campos de contraseña con icono de visualización (ojo) */
-.password-input-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-  width: 100%;
-}
-
-.password-input-wrap input {
-  width: 100%;
-  padding-right: 44px !important;
-}
-
-.password-input-wrap .btn-toggle-pwd {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.15rem;
-  line-height: 1;
-  transition: color 0.2s ease, transform 0.2s ease;
-  z-index: 5;
-}
-
-.password-input-wrap .btn-toggle-pwd:hover {
-  color: var(--primary-400);
-}
-
-.password-input-wrap .btn-toggle-pwd:focus {
-  outline: none;
-  color: var(--primary-400);
 }
