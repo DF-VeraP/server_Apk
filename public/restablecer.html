@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Restablecer Contraseña | Nexus Contactos</title>
+  <meta name="description" content="Página para restablecer y cambiar la contraseña en Nexus Contactos.">
+
+  <!-- Google Fonts: Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Bootstrap Icons (Minimalistas, sin emojis) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .reset-page-wrap {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .reset-card {
+      width: 100%;
+      max-width: 460px;
+      padding: 36px;
+      animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .brand-header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .brand-header .logo-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 56px;
+      height: 56px;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: var(--radius-md);
+      font-size: 26px;
+      color: var(--primary-400);
+      margin-bottom: 14px;
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
+    }
+
+    .brand-header h1 {
+      font-family: var(--font-display);
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 6px;
+    }
+
+    .brand-header p {
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .user-account-badge {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border-glass);
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      color: var(--primary-400);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      word-break: break-all;
+    }
+
+    .error-card-state, .success-card-state {
+      text-align: center;
+      padding: 16px 0;
+    }
+
+    .state-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      color: #fb7185;
+    }
+
+    .success-card-state .state-icon {
+      color: var(--accent-emerald);
+    }
+
+    .state-title {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .state-desc {
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    .btn-return {
+      display: inline-block;
+      width: 100%;
+      text-align: center;
+      padding: 12px 24px;
+      background: linear-gradient(135deg, var(--primary-500), #2563eb);
+      color: #ffffff !important;
+      text-decoration: none;
+      font-weight: 600;
+      border-radius: var(--radius-md);
+      transition: var(--transition-fast);
+      box-shadow: 0 4px 14px var(--primary-glow);
+    }
+
+    .btn-return:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px var(--primary-glow);
+    }
+
+    .password-rules {
+      font-size: 12px;
+      color: var(--text-subtle);
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body class="dark-theme">
+  <!-- Fondo con resplandores degradados -->
+  <div class="bg-glow bg-glow-1"></div>
+  <div class="bg-glow bg-glow-2"></div>
+
+  <div class="reset-page-wrap">
+    <div class="reset-card glass-panel">
+
+      <!-- ESTADO: CARGANDO / VERIFICANDO TOKEN -->
+      <div id="stateLoading" class="loading-state">
+        <div class="spinner"></div>
+        <p>Verificando enlace de restablecimiento...</p>
+      </div>
+
+      <!-- ESTADO: ERROR / TOKEN INVÁLIDO O EXPIRADO -->
+      <div id="stateInvalid" class="error-card-state hidden">
+        <div class="state-icon"><i class="bi bi-exclamation-triangle"></i></div>
+        <h2 class="state-title text-danger">Enlace Inválido o Expirado</h2>
+        <p class="state-desc" id="invalidReasonText">
+          El enlace de restablecimiento no es válido, ya fue utilizado o ha superado el tiempo límite de validez (1 hora).
+        </p>
+        <a href="/" class="btn-return">Ir al Inicio de Sesión</a>
+      </div>
+
+      <!-- ESTADO: FORMULARIO ACTIVO PARA CAMBIAR CONTRASEÑA -->
+      <div id="stateForm" class="hidden">
+        <div class="brand-header">
+          <div class="logo-badge"><i class="bi bi-shield-lock"></i></div>
+          <h1>Restablecer Contraseña</h1>
+          <p>Ingresa tu nueva contraseña para acceder nuevamente a tu cuenta.</p>
+        </div>
+
+        <!-- Indicador de cuenta -->
+        <div id="accountBadge" class="user-account-badge hidden">
+          <i class="bi bi-person"></i>
+          <span id="accountEmailText">usuario@correo.com</span>
+        </div>
+
+        <div id="resetAlertBox" class="alert-box hidden"></div>
+
+        <form id="changePasswordForm">
+          <!-- INPUT 1: CONTRASEÑA NUEVA -->
+          <div class="form-group">
+            <label for="inputNuevaPassword">Nueva Contraseña *</label>
+            <div class="password-input-wrap">
+              <input 
+                type="password" 
+                id="inputNuevaPassword" 
+                placeholder="Mínimo 6 caracteres" 
+                minlength="6" 
+                required 
+                autocomplete="new-password"
+              >
+              <button type="button" class="btn-toggle-pwd" data-target="inputNuevaPassword" title="Mostrar/Ocultar">
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
+            <span class="password-rules">Debe tener al menos 6 caracteres</span>
+          </div>
+
+          <!-- INPUT 2: CONFIRMAR NUEVA CONTRASEÑA -->
+          <div class="form-group">
+            <label for="inputConfirmarPassword">Confirmar Nueva Contraseña *</label>
+            <div class="password-input-wrap">
+              <input 
+                type="password" 
+                id="inputConfirmarPassword" 
+                placeholder="Repite la nueva contraseña" 
+                minlength="6" 
+                required 
+                autocomplete="new-password"
+              >
+              <button type="button" class="btn-toggle-pwd" data-target="inputConfirmarPassword" title="Mostrar/Ocultar">
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- BOTÓN DE CAMBIAR -->
+          <button type="submit" class="btn-primary w-full" id="btnSubmitChange" style="margin-top: 10px;">
+            <span class="btn-text">Cambiar Contraseña</span>
+            <span class="btn-spinner hidden"></span>
+          </button>
+        </form>
+      </div>
+
+      <!-- ESTADO: ÉXITO / CONTRASEÑA CAMBIADA -->
+      <div id="stateSuccess" class="success-card-state hidden">
+        <div class="state-icon"><i class="bi bi-check-circle"></i></div>
+        <h2 class="state-title" style="color: var(--accent-emerald);">Contraseña Actualizada</h2>
+        <p class="state-desc">
+          Tu contraseña ha sido modificada con éxito. Tu cuenta está desbloqueada y lista para ser usada.
+        </p>
+        <a href="/" class="btn-return" id="btnGoLogin">Iniciar Sesión Ahora</a>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // Elementos del DOM
+      const stateLoading = document.getElementById('stateLoading');
+      const stateInvalid = document.getElementById('stateInvalid');
+      const stateForm = document.getElementById('stateForm');
+      const stateSuccess = document.getElementById('stateSuccess');
+      const invalidReasonText = document.getElementById('invalidReasonText');
+      const accountBadge = document.getElementById('accountBadge');
+      const accountEmailText = document.getElementById('accountEmailText');
+
+      const changePasswordForm = document.getElementById('changePasswordForm');
+      const inputNuevaPassword = document.getElementById('inputNuevaPassword');
+      const inputConfirmarPassword = document.getElementById('inputConfirmarPassword');
+      const resetAlertBox = document.getElementById('resetAlertBox');
+      const btnSubmitChange = document.getElementById('btnSubmitChange');
+
+      // Extraer token de la URL (?token=...)
+      const urlParams = new URLSearchParams(window.location.search);
+      let token = urlParams.get('token');
+
+      // Si no viene en search, intentar con el hash (#token=...)
+      if (!token && window.location.hash) {
+        const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
+        token = hashParams.get('token');
+      }
+
+      // Configurar alternar visibilidad de contraseña
+      document.querySelectorAll('.btn-toggle-pwd').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const input = document.getElementById(btn.dataset.target);
+          if (input) {
+            const isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+            btn.innerHTML = isPassword ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
+          }
+        });
+      });
+
+      // Validar presencia del token
+      if (!token) {
+        mostrarEstadoInvalido('No se proporcionó ningún token de restablecimiento.');
+        return;
+      }
+
+      // Validar token con el servidor al cargar
+      verificarToken();
+
+      async function verificarToken() {
+        try {
+          const res = await fetch(`/api/auth/verificar-token?token=${encodeURIComponent(token)}`);
+          const data = await res.json();
+
+          if (!res.ok || !data.valido) {
+            mostrarEstadoInvalido(data.error || 'El enlace de restablecimiento ha expirado o no es válido.');
+            return;
+          }
+
+          // Token válido: mostrar formulario
+          stateLoading.classList.add('hidden');
+          stateForm.classList.remove('hidden');
+
+          if (data.email) {
+            accountEmailText.textContent = data.email;
+            accountBadge.classList.remove('hidden');
+          }
+
+          setTimeout(() => inputNuevaPassword.focus(), 100);
+
+        } catch (err) {
+          console.error(err);
+          mostrarEstadoInvalido('Error al conectar con el servidor para verificar el enlace.');
+        }
+      }
+
+      function mostrarEstadoInvalido(mensaje) {
+        stateLoading.classList.add('hidden');
+        stateForm.classList.add('hidden');
+        stateSuccess.classList.add('hidden');
+        invalidReasonText.textContent = mensaje;
+        stateInvalid.classList.remove('hidden');
+      }
+
+      // Manejar el envío del formulario
+      changePasswordForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        resetAlertBox.classList.add('hidden');
+
+        const pwd1 = inputNuevaPassword.value;
+        const pwd2 = inputConfirmarPassword.value;
+
+        // Validaciones
+        if (pwd1.length < 6) {
+          mostrarAlerta('La contraseña debe tener al menos 6 caracteres.', 'error');
+          inputNuevaPassword.focus();
+          return;
+        }
+
+        if (pwd1 !== pwd2) {
+          mostrarAlerta('Las contraseñas no coinciden. Por favor verifícalas.', 'error');
+          inputConfirmarPassword.focus();
+          return;
+        }
+
+        setLoadingBtn(true);
+
+        try {
+          const res = await fetch('/api/auth/restablecer-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              token: token,
+              nuevaPassword: pwd1,
+            }),
+          });
+
+          const data = await res.json();
+
+          if (!res.ok) {
+            mostrarAlerta(data.error || 'No se pudo restablecer la contraseña.', 'error');
+            setLoadingBtn(false);
+            return;
+          }
+
+          // Éxito: ocultar formulario y mostrar confirmación
+          stateForm.classList.add('hidden');
+          stateSuccess.classList.remove('hidden');
+
+          // Redirección automática tras 4 segundos
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 4000);
+
+        } catch (err) {
+          console.error(err);
+          mostrarAlerta('Error de conexión con el servidor. Inténtalo de nuevo.', 'error');
+          setLoadingBtn(false);
+        }
+      });
+
+      function mostrarAlerta(msg, tipo) {
+        resetAlertBox.className = `alert-box alert-${tipo}`;
+        resetAlertBox.textContent = msg;
+        resetAlertBox.classList.remove('hidden');
+      }
+
+      function setLoadingBtn(loading) {
+        const btnText = btnSubmitChange.querySelector('.btn-text');
+        const spinner = btnSubmitChange.querySelector('.btn-spinner');
+        btnSubmitChange.disabled = loading;
+        if (loading) {
+          btnText.textContent = 'Actualizando contraseña...';
+          spinner.classList.remove('hidden');
+        } else {
+          btnText.textContent = 'Cambiar Contraseña';
+          spinner.classList.add('hidden');
+        }
+      }
+
+    })();
+  </script>
+</body>
+</html>
