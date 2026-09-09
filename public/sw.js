@@ -2,17 +2,18 @@
 // Service Worker - Nexus Contactos PWA (Soporte Offline & Recarga sin Internet)
 // ==============================================================================
 
-const CACHE_NAME = 'nexus-contactos-v1.1';
+const CACHE_NAME = 'nexus-contactos-v1.2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/restablecer.html',
   '/css/styles.css',
+  '/css/bootstrap-icons.min.css',
+  '/fonts/bootstrap-icons.woff2',
+  '/fonts/bootstrap-icons.woff',
   '/js/app.js',
   '/manifest.json',
-  '/img/icon.svg',
-  'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css',
-  'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/fonts/bootstrap-icons.woff2'
+  '/img/icon.svg'
 ];
 
 // 1. INSTALACIÓN: Precargar archivos del frontend en memoria caché

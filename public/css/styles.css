@@ -162,15 +162,23 @@ body {
 }
 
 .logo-icon {
-  font-size: 26px;
-  background: rgba(56, 189, 248, 0.1);
-  border: 1px solid rgba(56, 189, 248, 0.2);
+  font-size: 24px;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #38bdf8 !important;
   width: 44px;
   height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-md);
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.2);
+}
+
+.logo-icon i {
+  color: #38bdf8 !important;
+  font-size: 22px;
+  display: inline-block;
 }
 
 .brand-title {
@@ -393,14 +401,28 @@ body {
 
 .form-group input {
   width: 100%;
-  background: rgba(15, 23, 42, 0.8);
+  background: #0f172a !important; /* Fondo oscuro constante */
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-md);
   padding: 12px 14px;
-  color: #fff;
+  color: #f1f5f9 !important;
   font-size: 14px;
   font-family: inherit;
   transition: var(--transition-fast);
+}
+
+/* Prevenir que el autocompletado de Chrome / Edge pinte de blanco los inputs */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #0f172a inset !important;
+  box-shadow: 0 0 0 1000px #0f172a inset !important;
+  -webkit-text-fill-color: #f1f5f9 !important;
+  color: #f1f5f9 !important;
+  caret-color: #38bdf8 !important;
+  border-color: rgba(56, 189, 248, 0.4) !important;
+  transition: background-color 5000s ease-in-out 0s;
 }
 
 .form-group input:focus {
@@ -418,7 +440,7 @@ body {
 
 .password-input-wrap input {
   width: 100%;
-  padding-right: 46px !important;
+  padding-right: 48px !important;
 }
 
 .btn-toggle-pwd {
@@ -431,33 +453,28 @@ body {
   border: none !important;
   outline: none !important;
   box-shadow: none !important;
-  color: #94a3b8 !important; /* Gris pizarra elegante idéntico a Android */
+  color: #38bdf8 !important; /* Azul cian eléctrico de alto contraste */
   cursor: pointer;
-  padding: 6px;
+  padding: 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.15rem;
+  font-size: 1.25rem;
   line-height: 1;
-  transition: color 0.2s ease, transform 0.15s ease;
-  z-index: 5;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+  z-index: 10;
 }
 
 .btn-toggle-pwd i {
-  color: #94a3b8 !important; /* Asegura que el icono no sea blanco puro */
-  font-size: 1.15rem;
-  transition: color 0.2s ease;
+  color: #38bdf8 !important;
+  font-size: 1.25rem;
+  display: inline-block;
 }
 
 .btn-toggle-pwd:hover,
 .btn-toggle-pwd:focus {
   background: transparent !important;
-  background-color: transparent !important;
-}
-
-.btn-toggle-pwd:hover i,
-.btn-toggle-pwd:focus i {
-  color: var(--primary-400, #38bdf8) !important; /* Cian eléctrico al pasar el ratón */
+  transform: translateY(-50%) scale(1.1);
 }
 
 .form-sub-action {
