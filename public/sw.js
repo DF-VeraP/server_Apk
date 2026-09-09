@@ -2,13 +2,15 @@
 // Service Worker - Nexus Contactos PWA (Soporte Offline & Recarga sin Internet)
 // ==============================================================================
 
-const CACHE_NAME = 'nexus-contactos-v1.3';
+const CACHE_NAME = 'nexus-contactos-v1.4';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/restablecer.html',
   '/css/styles.css',
   '/css/bootstrap-icons.min.css',
+  '/css/fonts/bootstrap-icons.woff2',
+  '/css/fonts/bootstrap-icons.woff',
   '/fonts/bootstrap-icons.woff2',
   '/fonts/bootstrap-icons.woff',
   '/js/app.js',
