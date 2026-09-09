@@ -1183,6 +1183,19 @@
     }[tag] || tag));
   }
 
+  // Registro del Service Worker para persistencia Offline y recargas (PWA)
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then((reg) => {
+          console.log('[PWA] Service Worker registrado exitosamente con alcance:', reg.scope);
+        })
+        .catch((err) => {
+          console.warn('[PWA] Fallo en el registro del Service Worker:', err);
+        });
+    });
+  }
+
   // Arranque de la app
   document.addEventListener('DOMContentLoaded', init);
 

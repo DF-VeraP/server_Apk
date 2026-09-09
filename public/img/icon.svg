@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="nexusGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#0369a1" />
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#818cf8" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#0f172a" />
+  <rect x="24" y="24" width="464" height="464" rx="96" fill="none" stroke="#1e293b" stroke-width="8" />
+  
+  <!-- Silhouette card / contact -->
+  <rect x="116" y="106" width="280" height="300" rx="36" fill="url(#nexusGrad)" />
+  <circle cx="256" cy="206" r="54" fill="#f8fafc" />
+  <path d="M166 346 C166 292, 202 276, 256 276 C310 276, 346 292, 346 346 Z" fill="#f8fafc" />
+  
+  <!-- Online/Offline sync orb badge -->
+  <circle cx="366" cy="376" r="38" fill="#10b981" stroke="#0f172a" stroke-width="8" />
+  <path d="M352 376 L362 386 L382 366" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+</svg>
