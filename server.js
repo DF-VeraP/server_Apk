@@ -32,18 +32,9 @@ app.use(
   })
 );
 
-// 2. CONTROL DE ORIGEN CORS (Protección contra solicitudes cruzadas no autorizadas)
-const rawAllowedOrigins = process.env.ALLOWED_ORIGINS || 'http://localhost:4000,http://127.0.0.1:4000,capacitor://localhost';
-const allowedOrigins = rawAllowedOrigins.split(',').map(o => o.trim());
-
+// 2. CONTROL DE ORIGEN CORS (Permite web, APK móvil y orígenes legítimos)
 app.use(cors({
-  origin: function (origin, callback) {
-    // Permitir solicitudes sin origen (como apps móviles APK, herramientas del servidor o curl interno)
-    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
-      return callback(null, true);
-    }
-    return callback(new Error('Acceso bloqueado por política de seguridad CORS'), false);
-  },
+  origin: true,
   credentials: true,
 }));
 
@@ -110,8 +101,56 @@ pool.connect((err, client, release) => {
   } else {
     console.log('[OK] Conectado a PostgreSQL (' + (process.env.DB_NAME || 'bd_contacto') + ')');
     release();
+    inicializarBaseDeDatos();
   }
 });
+
+// Inicialización automática de tablas y usuario admin si no existen
+async function inicializarBaseDeDatos() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS public.usuarios (
+          id SERIAL PRIMARY KEY,
+          email VARCHAR(150) UNIQUE NOT NULL,
+          password_hash VARCHAR(255) NOT NULL,
+          intentos_fallidos INTEGER DEFAULT 0,
+          bloqueado BOOLEAN DEFAULT FALSE,
+          token_seguridad VARCHAR(255),
+          token_expira TIMESTAMP,
+          fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS public.contactos (
+          usuario_id INTEGER NOT NULL,
+          cc VARCHAR(20) NOT NULL,
+          nombres VARCHAR(100) NOT NULL,
+          apellidos VARCHAR(100) NOT NULL,
+          contacto VARCHAR(20) NOT NULL,
+          direccion TEXT,
+          fecha_nacimiento DATE,
+          profesion VARCHAR(100),
+          eliminado_en TIMESTAMP DEFAULT NULL,
+          fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT contactos_pkey PRIMARY KEY (usuario_id, cc),
+          CONSTRAINT fk_contactos_usuario FOREIGN KEY (usuario_id) REFERENCES public.usuarios(id) ON DELETE CASCADE
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_contactos_usuario_id ON public.contactos(usuario_id);
+      CREATE INDEX IF NOT EXISTS idx_contactos_cc ON public.contactos(cc);
+      CREATE INDEX IF NOT EXISTS idx_usuarios_email ON public.usuarios(email);
+      CREATE INDEX IF NOT EXISTS idx_usuarios_token ON public.usuarios(token_seguridad);
+
+      INSERT INTO public.usuarios (email, password_hash)
+      VALUES ('admin@contactos.com', '$2a$10$eE61K0Wf9G4hX.rLgY6.kOPeE953sDqfFomxkWgRau5k6G0y4uJae')
+      ON CONFLICT (email) DO NOTHING;
+    `);
+    console.log('[OK] Tablas de base de datos verificadas e inicializadas correctamente.');
+  } catch (err) {
+    console.error('[WARN] Error al inicializar tablas en PostgreSQL:', err.message);
+  }
+}
 
 // ============================================
 // MIDDLEWARE DE AUTENTICACIÓN (JWT - 30 MIN)

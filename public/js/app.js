@@ -406,7 +406,12 @@
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await res.json();
+      let data;
+      try {
+        data = await res.json();
+      } catch (jsonErr) {
+        data = { error: 'Error del servidor (' + res.status + '). Verifica la conexión.' };
+      }
 
       if (!res.ok) {
         // Manejo de intentos y bloqueo
