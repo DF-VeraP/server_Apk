@@ -70,3 +70,17 @@ El sistema está diseñado para que el usuario pueda operar de forma continua, i
       fecha_actualizacion = CURRENT_TIMESTAMP;
   ```
 - **Consolidación:** Al finalizar, el servidor retorna la lista oficial actualizada de todos los contactos del usuario para actualizar el estado del navegador.
+
+---
+
+## 4. Persistencia de la Web sin Internet (PWA & Service Worker)
+
+Para evitar que la aplicación web se caiga o muestre la pantalla de "Sin conexión" al recargar (F5) o abrir el navegador sin internet:
+
+1. **Service Worker (`public/sw.js`):**
+   - Intercepta las solicitudes HTTP del navegador.
+   - Aplica estrategia **Network-First con Fallback a Caché** para el documento HTML: si hay internet obtiene la versión más fresca del servidor; si no hay internet o se recarga la página, entrega `index.html` instantáneamente desde la memoria local.
+   - Aplica estrategia **Stale-While-Revalidate** para estilos CSS, JavaScript, fuentes e iconos.
+2. **Manifiesto de Aplicación Web (`public/manifest.json`):**
+   - Define el nombre, colores temáticos (`#0f172a`), modo `standalone` e icono vectorial (`/img/icon.svg`).
+   - Permite que navegadores modernos (Chrome, Edge, Safari) ofrezcan el botón **"Instalar aplicación"** en la PC o teléfono móvil para usarla como una app nativa de escritorio.
