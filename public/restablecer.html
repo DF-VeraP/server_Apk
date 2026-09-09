@@ -195,8 +195,8 @@
                 required 
                 autocomplete="new-password"
               >
-              <button type="button" class="btn-toggle-pwd" data-target="inputNuevaPassword" title="Mostrar/Ocultar">
-                <i class="bi bi-eye"></i>
+              <button type="button" class="btn-toggle-pwd" data-target="inputNuevaPassword" title="Mostrar contraseña">
+                <i class="bi bi-eye-slash"></i>
               </button>
             </div>
             <span class="password-rules">Debe tener al menos 6 caracteres</span>
@@ -214,8 +214,8 @@
                 required 
                 autocomplete="new-password"
               >
-              <button type="button" class="btn-toggle-pwd" data-target="inputConfirmarPassword" title="Mostrar/Ocultar">
-                <i class="bi bi-eye"></i>
+              <button type="button" class="btn-toggle-pwd" data-target="inputConfirmarPassword" title="Mostrar contraseña">
+                <i class="bi bi-eye-slash"></i>
               </button>
             </div>
           </div>
@@ -277,7 +277,8 @@
           if (input) {
             const isPassword = input.type === 'password';
             input.type = isPassword ? 'text' : 'password';
-            btn.innerHTML = isPassword ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
+            btn.innerHTML = isPassword ? '<i class="bi bi-eye"></i>' : '<i class="bi bi-eye-slash"></i>';
+            btn.setAttribute('title', isPassword ? 'Ocultar contraseña' : 'Ver contraseña');
           }
         });
       });

@@ -264,7 +264,7 @@
       if (input) {
         const isCurrentlyPassword = input.type === 'password';
         input.type = isCurrentlyPassword ? 'text' : 'password';
-        btn.innerHTML = isCurrentlyPassword ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
+        btn.innerHTML = isCurrentlyPassword ? '<i class="bi bi-eye"></i>' : '<i class="bi bi-eye-slash"></i>';
         btn.setAttribute('title', isCurrentlyPassword ? 'Ocultar contraseña' : 'Ver contraseña');
       }
     });

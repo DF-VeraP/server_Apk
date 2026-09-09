@@ -18,16 +18,7 @@ const jwtSecret = process.env.JWT_SECRET || 'clave_secreta_default_contactos_202
 // Protege contra clickjacking, MIME-sniffing, XSS y oculta X-Powered-By
 app.use(
   helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'"],
-        styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com"],
-        fontSrc: ["'self'", "https://cdn.jsdelivr.net", "https://fonts.gstatic.com", "data:"],
-        imgSrc: ["'self'", "data:"],
-        connectSrc: ["'self'"],
-      },
-    },
+    contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
   })
 );
