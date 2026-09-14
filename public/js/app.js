@@ -845,7 +845,9 @@
     const limpio = String(nuevo).replace(/\D/g, '');
     if (!limpio) return actuales;
     const sinDup = actuales.filter(t => t !== limpio);
-    return [limpio, ...sinDup];
+    // Regla FIFO: nuevo teléfono va a la Posición 1 y si hay 3, se descarta el más antiguo
+    const lista = [limpio, ...sinDup];
+    return lista.slice(0, 3);
   }
 
   function renderizarPhonesChips() {
@@ -880,7 +882,7 @@
       const chip = document.createElement('div');
       chip.className = 'phone-chip-item';
 
-      const posLabel = idx === 0 ? 'Principal' : `Tel ${idx + 1}`;
+      const posLabel = idx === 0 ? 'Pos 1 (Reciente)' : (idx === 1 ? 'Pos 2 (Anterior)' : 'Pos 3 (Antiguo)');
 
       chip.innerHTML = `
         <div class="phone-chip-info">
