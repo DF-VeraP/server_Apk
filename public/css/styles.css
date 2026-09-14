@@ -791,7 +791,7 @@ input:-webkit-autofill:active {
   justify-content: flex-end;
 }
 
-.btn-action-edit, .btn-action-delete {
+.btn-action-view, .btn-action-edit, .btn-action-delete {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border-glass);
   padding: 6px 12px;
@@ -799,6 +799,18 @@ input:-webkit-autofill:active {
   font-size: 12px;
   cursor: pointer;
   transition: var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.btn-action-view {
+  color: #a78bfa;
+}
+
+.btn-action-view:hover {
+  background: rgba(167, 139, 250, 0.15);
+  border-color: rgba(167, 139, 250, 0.3);
 }
 
 .btn-action-edit {
@@ -815,6 +827,147 @@ input:-webkit-autofill:active {
 
 .btn-action-delete:hover {
   background: rgba(244, 63, 94, 0.15);
+}
+
+/* Modal Detalle de Contacto (Visualizador limpio y elegante) */
+.modal-card.modal-view {
+  max-width: 520px;
+  padding: 24px 28px;
+}
+
+.view-modal-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.avatar-view {
+  width: 46px;
+  height: 46px;
+  font-size: 18px;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+}
+
+.view-contact-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 18px 0;
+}
+
+.view-detail-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  transition: var(--transition-fast);
+}
+
+.view-detail-card:hover {
+  border-color: rgba(56, 189, 248, 0.25);
+  background: rgba(15, 23, 42, 0.9);
+}
+
+.view-detail-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(56, 189, 248, 0.12);
+  color: #38bdf8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.view-detail-content {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.view-detail-label {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.view-detail-value {
+  font-size: 14px;
+  color: #f1f5f9;
+  font-weight: 500;
+}
+
+.view-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.view-phones-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.view-phone-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(2, 132, 199, 0.1);
+  border: 1px solid rgba(2, 132, 199, 0.25);
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+
+.view-phone-link {
+  color: #38bdf8;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 13.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.view-phone-link:hover {
+  text-decoration: underline;
+}
+
+.view-phone-tag {
+  font-size: 11px;
+  background: rgba(2, 132, 199, 0.25);
+  color: #7dd3fc;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.btn-card-view {
+  background: rgba(167, 139, 250, 0.12);
+  border: 1px solid rgba(167, 139, 250, 0.3);
+  color: #c4b5fd;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.btn-card-view:hover {
+  background: rgba(167, 139, 250, 0.22);
 }
 
 .text-right {

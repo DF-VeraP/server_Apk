@@ -364,6 +364,67 @@
     </div>
   </div>
 
+  <!-- MODAL: MOSTRAR DETALLES DEL CONTACTO -->
+  <div id="viewContactModal" class="modal-backdrop hidden">
+    <div class="modal-card modal-view glass-panel">
+      <div class="modal-header">
+        <div class="view-modal-title-wrap">
+          <div class="avatar-circle avatar-view" id="viewAvatar">C</div>
+          <div>
+            <h3 id="viewFullName" style="margin:0; font-size:1.25rem;">Detalle del Contacto</h3>
+            <span class="cc-badge" id="viewCcBadge" style="margin-top:4px; display:inline-block;">CC —</span>
+          </div>
+        </div>
+        <button class="btn-close-modal" id="btnCloseViewModal" type="button">&times;</button>
+      </div>
+
+      <div class="view-contact-body">
+        <div class="view-detail-card">
+          <div class="view-detail-icon"><i class="bi bi-telephone-fill"></i></div>
+          <div class="view-detail-content">
+            <span class="view-detail-label">Teléfonos Registrados</span>
+            <div id="viewPhonesList" class="view-phones-container">
+              <!-- Teléfonos renderizados con badges -->
+            </div>
+          </div>
+        </div>
+
+        <div class="view-detail-grid">
+          <div class="view-detail-card">
+            <div class="view-detail-icon"><i class="bi bi-briefcase-fill"></i></div>
+            <div class="view-detail-content">
+              <span class="view-detail-label">Profesión / Ocupación</span>
+              <span class="view-detail-value" id="viewProfesion">—</span>
+            </div>
+          </div>
+
+          <div class="view-detail-card">
+            <div class="view-detail-icon"><i class="bi bi-calendar-event-fill"></i></div>
+            <div class="view-detail-content">
+              <span class="view-detail-label">Fecha de Nacimiento</span>
+              <span class="view-detail-value" id="viewFechaNac">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="view-detail-card">
+          <div class="view-detail-icon"><i class="bi bi-geo-alt-fill"></i></div>
+          <div class="view-detail-content">
+            <span class="view-detail-label">Dirección de Residencia</span>
+            <span class="view-detail-value" id="viewDireccion">—</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="justify-content: space-between;">
+        <button type="button" class="btn-secondary" id="btnViewToEdit" style="display:inline-flex; align-items:center; gap:6px;">
+          <i class="bi bi-pencil-square"></i> Editar Contacto
+        </button>
+        <button type="button" class="btn-primary" id="btnCloseViewBtn">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: CONFIRMACIÓN DE ELIMINACIÓN -->
   <div id="deleteModal" class="modal-backdrop hidden">
     <div class="modal-card modal-sm glass-panel text-center">

@@ -104,6 +104,20 @@
   const btnCancelPending = document.getElementById('btnCancelPending');
   const btnForceSyncNow = document.getElementById('btnForceSyncNow');
 
+  // Modal Detalle / Mostrar Contacto
+  const viewContactModal = document.getElementById('viewContactModal');
+  const viewAvatar = document.getElementById('viewAvatar');
+  const viewFullName = document.getElementById('viewFullName');
+  const viewCcBadge = document.getElementById('viewCcBadge');
+  const viewPhonesList = document.getElementById('viewPhonesList');
+  const viewProfesion = document.getElementById('viewProfesion');
+  const viewFechaNac = document.getElementById('viewFechaNac');
+  const viewDireccion = document.getElementById('viewDireccion');
+  const btnCloseViewModal = document.getElementById('btnCloseViewModal');
+  const btnCloseViewBtn = document.getElementById('btnCloseViewBtn');
+  const btnViewToEdit = document.getElementById('btnViewToEdit');
+  let currentViewingContact = null;
+
   // Banner Móvil APK
   const mobileApkBanner = document.getElementById('mobileApkBanner');
   const btnCloseBanner = document.getElementById('btnCloseBanner');
@@ -299,6 +313,23 @@
     btnCloseModal.addEventListener('click', cerrarModalContacto);
     btnCancelModal.addEventListener('click', cerrarModalContacto);
     contactForm.addEventListener('submit', guardarContacto);
+
+    // Modal Mostrar Contacto
+    if (btnCloseViewModal) {
+      btnCloseViewModal.addEventListener('click', cerrarModalVerContacto);
+    }
+    if (btnCloseViewBtn) {
+      btnCloseViewBtn.addEventListener('click', cerrarModalVerContacto);
+    }
+    if (btnViewToEdit) {
+      btnViewToEdit.addEventListener('click', () => {
+        if (currentViewingContact) {
+          const contacto = currentViewingContact;
+          cerrarModalVerContacto();
+          abrirModalContacto('edit', contacto);
+        }
+      });
+    }
 
     // Modal de Eliminación
     btnCancelDelete.addEventListener('click', () => deleteModal.classList.add('hidden'));
@@ -709,12 +740,14 @@
         <td>${c.fecha_nacimiento ? c.fecha_nacimiento.split('T')[0] : '—'}</td>
         <td class="text-right">
           <div class="table-actions">
+            <button class="btn-action-view" data-cc="${escapeHtml(c.cc)}" title="Mostrar detalles"><i class="bi bi-eye"></i> Mostrar</button>
             <button class="btn-action-edit" data-cc="${escapeHtml(c.cc)}" title="Editar"><i class="bi bi-pencil-square"></i> Editar</button>
-            <button class="btn-action-delete" data-cc="${escapeHtml(c.cc)}" data-name="${escapeHtml(c.nombres)}" title="Eliminar"><i class="bi bi-trash3"></i> Borrar</button>
+            <button class="btn-action-delete" data-cc="${escapeHtml(c.cc)}" data-name="${escapeHtml(c.nombres)}" title="Eliminar"><i class="bi bi-trash3"></i> Eliminar</button>
           </div>
         </td>
       `;
 
+      tr.querySelector('.btn-action-view').addEventListener('click', () => abrirModalVerContacto(c));
       tr.querySelector('.btn-action-edit').addEventListener('click', () => abrirModalContacto('edit', c));
       tr.querySelector('.btn-action-delete').addEventListener('click', () => abrirModalEliminar(c));
       contactsTableBody.appendChild(tr);
@@ -758,11 +791,13 @@
           </div>
 
           <div class="card-actions-bar">
+            <button class="btn-card-view" data-cc="${escapeHtml(c.cc)}" title="Mostrar"><i class="bi bi-eye"></i> Mostrar</button>
             <button class="btn-card-edit" data-cc="${escapeHtml(c.cc)}" title="Editar"><i class="bi bi-pencil-square"></i> Editar</button>
             <button class="btn-card-delete" data-cc="${escapeHtml(c.cc)}" title="Eliminar"><i class="bi bi-trash3"></i> Eliminar</button>
           </div>
         `;
 
+        card.querySelector('.btn-card-view').addEventListener('click', () => abrirModalVerContacto(c));
         card.querySelector('.btn-card-edit').addEventListener('click', () => abrirModalContacto('edit', c));
         card.querySelector('.btn-card-delete').addEventListener('click', () => abrirModalEliminar(c));
         contactsCardsContainer.appendChild(card);
@@ -1011,6 +1046,52 @@
     contactModal.classList.add('hidden');
     limpiarAutocompletadoModal();
     contactForm.reset();
+  }
+
+  // =========================================================================
+  // MODAL MOSTRAR DETALLE DEL CONTACTO
+  // =========================================================================
+  function abrirModalVerContacto(contacto) {
+    if (!contacto || !viewContactModal) return;
+    currentViewingContact = contacto;
+
+    const inicial = (contacto.nombres || 'C').charAt(0).toUpperCase();
+    if (viewAvatar) viewAvatar.textContent = inicial;
+    if (viewFullName) viewFullName.textContent = `${contacto.nombres || ''} ${contacto.apellidos || ''}`.trim() || 'Sin Nombre';
+    if (viewCcBadge) viewCcBadge.textContent = `CC: ${contacto.cc || '—'}`;
+    if (viewProfesion) viewProfesion.textContent = contacto.profesion || '—';
+    if (viewFechaNac) {
+      viewFechaNac.textContent = contacto.fecha_nacimiento ? contacto.fecha_nacimiento.split('T')[0] : '—';
+    }
+    if (viewDireccion) viewDireccion.textContent = contacto.direccion || '—';
+
+    // Lista de teléfonos
+    if (viewPhonesList) {
+      viewPhonesList.innerHTML = '';
+      const tels = parsearTelefonosJs(contacto.contacto);
+      if (tels.length === 0) {
+        viewPhonesList.innerHTML = '<span style="color:var(--text-muted); font-size:13px;">No hay teléfonos registrados</span>';
+      } else {
+        tels.forEach((tel, idx) => {
+          const chip = document.createElement('div');
+          chip.className = 'view-phone-chip';
+          chip.innerHTML = `
+            <a href="tel:${escapeHtml(tel)}" class="view-phone-link" title="Llamar">
+              <i class="bi bi-telephone-outbound"></i> ${escapeHtml(tel)}
+            </a>
+            <span class="view-phone-tag">${idx === 0 ? 'Principal' : `Secundario ${idx}`}</span>
+          `;
+          viewPhonesList.appendChild(chip);
+        });
+      }
+    }
+
+    viewContactModal.classList.remove('hidden');
+  }
+
+  function cerrarModalVerContacto() {
+    if (viewContactModal) viewContactModal.classList.add('hidden');
+    currentViewingContact = null;
   }
 
   async function guardarContacto(e) {
