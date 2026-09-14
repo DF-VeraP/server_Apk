@@ -789,10 +789,11 @@
   }
 
   // =========================================================================
-  // 9. MODAL AGREGAR / EDITAR CON AUTOCOMPLETADO Y GESTOR INTERACTIVO DE TELÉFONOS
+  // 9. MODAL AGREGAR / EDITAR CON GESTOR DE TELÉFONOS Y VALIDACIONES
   // =========================================================================
   const modalAutofillAlert = document.getElementById('modalAutofillAlert');
   const modalAutofillText = document.getElementById('modalAutofillText');
+  const phoneFieldLabel = document.getElementById('phoneFieldLabel');
   const phoneHistoryHint = document.getElementById('phoneHistoryHint');
   const phonesChipsContainer = document.getElementById('phonesChipsContainer');
   const btnAddPhoneToList = document.getElementById('btnAddPhoneToList');
@@ -817,13 +818,27 @@
     if (!phonesChipsContainer) return;
     phonesChipsContainer.innerHTML = '';
 
+    // En modo creación no mostramos la lista de chips interactiva ni el hint FIFO
+    if (modalMode.value === 'create') {
+      phonesChipsContainer.classList.add('hidden');
+      if (phoneHistoryHint) phoneHistoryHint.classList.add('hidden');
+      if (btnAddPhoneToList) btnAddPhoneToList.classList.add('hidden');
+      if (phoneFieldLabel) phoneFieldLabel.textContent = 'Teléfono de Contacto (10 dígitos) *';
+      return;
+    }
+
+    // Modo edición: habilitar gestión de historial FIFO
+    phonesChipsContainer.classList.remove('hidden');
+    if (phoneHistoryHint) phoneHistoryHint.classList.remove('hidden');
+    if (phoneFieldLabel) phoneFieldLabel.textContent = 'Teléfonos Registrados (FIFO máx 3) *';
+
     if (modalPhonesList.length === 0) {
       const emptyDiv = document.createElement('div');
       emptyDiv.style.color = '#94a3b8';
       emptyDiv.style.fontSize = '0.85rem';
       emptyDiv.textContent = 'Ningún teléfono registrado aún. Digita un número de 10 dígitos y pulsa "+ Agregar Teléfono".';
       phonesChipsContainer.appendChild(emptyDiv);
-      if (btnAddPhoneToList) btnAddPhoneToList.style.display = 'inline-flex';
+      if (btnAddPhoneToList) btnAddPhoneToList.classList.remove('hidden');
       return;
     }
 
@@ -875,11 +890,17 @@
     });
 
     if (btnAddPhoneToList) {
-      btnAddPhoneToList.style.display = modalPhonesList.length >= 3 ? 'none' : 'inline-flex';
+      if (modalPhonesList.length >= 3) {
+        btnAddPhoneToList.classList.add('hidden');
+      } else {
+        btnAddPhoneToList.classList.remove('hidden');
+      }
     }
   }
 
   function agregarTelefonoDesdeInput() {
+    if (modalMode.value === 'create') return; // En creación solo se usa el input principal
+
     const raw = inputContacto.value.trim().replace(/\D/g, '');
     if (!raw) {
       mostrarAlerta(modalAlertBox, 'error', 'Ingresa un número telefónico de 10 dígitos para agregarlo.');
@@ -916,68 +937,18 @@
       btnAddPhoneToList.addEventListener('click', agregarTelefonoDesdeInput);
     }
 
-    // Permitir agregar teléfono presionando Enter en el inputContacto
+    // En modo edición, permitir agregar teléfono presionando Enter
     inputContacto.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
-        e.preventDefault();
-        agregarTelefonoDesdeInput();
-      }
-    });
-
-    inputCc.addEventListener('input', () => {
-      if (autofillInProgress || modalMode.value !== 'create') return;
-      const ccVal = inputCc.value.trim();
-      if (ccVal.length >= 4) {
-        const coincidencia = contactsCache.find(c => String(c.cc).trim() === ccVal);
-        if (coincidencia) {
-          aplicarAutocompletadoModal(coincidencia, false);
-        } else {
-          limpiarAutocompletadoModal();
-        }
-      } else {
-        limpiarAutocompletadoModal();
-      }
-    });
-
-    inputContacto.addEventListener('input', () => {
-      if (autofillInProgress || modalMode.value !== 'create') return;
-      const telVal = inputContacto.value.trim().replace(/\D/g, '');
-      // Autocompletar tanto si escribe 7 a 10 dígitos
-      if (telVal.length in [7, 8, 9, 10] || telVal.length >= 7) {
-        const coincidencia = contactsCache.find(c => {
-          const tels = parsearTelefonosJs(c.contacto);
-          return tels.some(t => t === telVal || t.endsWith(telVal) || t.includes(telVal));
-        });
-        if (coincidencia) {
-          aplicarAutocompletadoModal(coincidencia, true);
+        if (modalMode.value === 'edit') {
+          e.preventDefault();
+          agregarTelefonoDesdeInput();
         }
       }
     });
-  }
 
-  function aplicarAutocompletadoModal(c, porTelefono = false) {
-    autofillInProgress = true;
-    if (porTelefono) {
-      inputCc.value = c.cc;
-    }
-    inputNombres.value = c.nombres || '';
-    inputApellidos.value = c.apellidos || '';
-    inputProfesion.value = c.profesion || '';
-    inputDireccion.value = c.direccion || '';
-    if (c.fecha_nacimiento) {
-      inputFechaNac.value = c.fecha_nacimiento.split('T')[0];
-    }
-
-    modalPhonesList = parsearTelefonosJs(c.contacto);
-    renderizarPhonesChips();
-
-    if (modalAutofillAlert) {
-      modalAutofillAlert.classList.remove('hidden');
-      if (modalAutofillText) {
-        modalAutofillText.textContent = `¡Persona identificada (${c.nombres} ${c.apellidos})! Datos autocompletados. Puedes agregar otro teléfono, modificar cualquiera existente con "Corregir" o editar sus datos.`;
-      }
-    }
-    autofillInProgress = false;
+    // Prohibido el autocompletado en registro de nuevo contacto:
+    // Los listeners de inputCc e inputContacto no autocompletan datos si se está en create
   }
 
   function limpiarAutocompletadoModal() {
@@ -986,16 +957,36 @@
     renderizarPhonesChips();
   }
 
+  function calcularFechaMaxima13Anios() {
+    const hoy = new Date();
+    const fechaLimite = new Date(hoy.getFullYear() - 13, hoy.getMonth(), hoy.getDate());
+    const yyyy = fechaLimite.getFullYear();
+    const mm = String(fechaLimite.getMonth() + 1).padStart(2, '0');
+    const dd = String(fechaLimite.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
   function abrirModalContacto(mode, contacto = null) {
     modalAlertBox.classList.add('hidden');
     limpiarAutocompletadoModal();
     contactForm.reset();
     modalMode.value = mode;
 
+    // Configurar atributo max para impedir fechas de nacimiento de menores de 13 años o futuras
+    if (inputFechaNac) {
+      inputFechaNac.max = calcularFechaMaxima13Anios();
+    }
+
     if (mode === 'create') {
       modalTitle.textContent = 'Nuevo Contacto';
       inputCc.disabled = false;
       modalPhonesList = [];
+      inputContacto.value = '';
+      inputContacto.placeholder = 'Ej: 3001234567 (10 dígitos)';
+      if (phoneFieldLabel) phoneFieldLabel.textContent = 'Teléfono de Contacto (10 dígitos) *';
+      if (btnAddPhoneToList) btnAddPhoneToList.classList.add('hidden');
+      if (phoneHistoryHint) phoneHistoryHint.classList.add('hidden');
+      if (phonesChipsContainer) phonesChipsContainer.classList.add('hidden');
     } else {
       modalTitle.textContent = 'Editar Contacto';
       inputCc.value = contacto.cc;
@@ -1008,6 +999,8 @@
         inputFechaNac.value = contacto.fecha_nacimiento.split('T')[0];
       }
       modalPhonesList = parsearTelefonosJs(contacto.contacto);
+      inputContacto.value = '';
+      inputContacto.placeholder = 'Agregar otro número telefónico...';
     }
 
     renderizarPhonesChips();
@@ -1028,25 +1021,43 @@
 
     const mode = modalMode.value;
 
-    // Si el usuario dejó un teléfono escrito en el campo de texto pero no le dio al botón "+", incorporarlo automáticamente
-    const telEnInput = inputContacto.value.trim().replace(/\D/g, '');
-    if (telEnInput) {
-      if (!/^\d{10}$/.test(telEnInput)) {
-        mostrarAlerta(modalAlertBox, 'error', `El número "${telEnInput}" es inválido. Debe tener exactamente 10 dígitos.`);
+    if (mode === 'create') {
+      // En modo creación: teléfono único obligatorio desde inputContacto
+      const telUnico = inputContacto.value.trim().replace(/\D/g, '');
+      if (!telUnico) {
+        mostrarAlerta(modalAlertBox, 'error', 'El número telefónico es obligatorio (debe tener 10 dígitos).');
         setLoadingBtn(submitBtn, false);
         inputContacto.focus();
         return;
       }
-      modalPhonesList = agregarTelefonoFIFOJs(modalPhonesList, telEnInput);
-      inputContacto.value = '';
-      renderizarPhonesChips();
-    }
+      if (!/^\d{10}$/.test(telUnico)) {
+        mostrarAlerta(modalAlertBox, 'error', `El número "${telUnico}" es inválido. Debe tener exactamente 10 dígitos numéricos.`);
+        setLoadingBtn(submitBtn, false);
+        inputContacto.focus();
+        return;
+      }
+      modalPhonesList = [telUnico];
+    } else {
+      // En modo edición: si dejó un teléfono escrito en el campo de texto, agregarlo por FIFO
+      const telEnInput = inputContacto.value.trim().replace(/\D/g, '');
+      if (telEnInput) {
+        if (!/^\d{10}$/.test(telEnInput)) {
+          mostrarAlerta(modalAlertBox, 'error', `El número "${telEnInput}" es inválido. Debe tener exactamente 10 dígitos.`);
+          setLoadingBtn(submitBtn, false);
+          inputContacto.focus();
+          return;
+        }
+        modalPhonesList = agregarTelefonoFIFOJs(modalPhonesList, telEnInput);
+        inputContacto.value = '';
+        renderizarPhonesChips();
+      }
 
-    if (modalPhonesList.length === 0) {
-      mostrarAlerta(modalAlertBox, 'error', 'Debes registrar al menos un número telefónico de 10 dígitos.');
-      setLoadingBtn(submitBtn, false);
-      inputContacto.focus();
-      return;
+      if (modalPhonesList.length === 0) {
+        mostrarAlerta(modalAlertBox, 'error', 'Debes registrar al menos un número telefónico de 10 dígitos.');
+        setLoadingBtn(submitBtn, false);
+        inputContacto.focus();
+        return;
+      }
     }
 
     const contactoData = {
@@ -1088,6 +1099,29 @@
       setLoadingBtn(submitBtn, false);
       inputApellidos.focus();
       return;
+    }
+
+    // Validación estricta de Fecha de Nacimiento: Mínimo 13 años y no futura
+    if (contactoData.fecha_nacimiento) {
+      const [y, m, d] = contactoData.fecha_nacimiento.split('-').map(Number);
+      const fnDate = new Date(y, m - 1, d);
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+
+      if (fnDate > hoy) {
+        mostrarAlerta(modalAlertBox, 'error', 'La fecha de nacimiento no puede ser una fecha futura.');
+        setLoadingBtn(submitBtn, false);
+        inputFechaNac.focus();
+        return;
+      }
+
+      const fechaMin13 = new Date(hoy.getFullYear() - 13, hoy.getMonth(), hoy.getDate());
+      if (fnDate > fechaMin13) {
+        mostrarAlerta(modalAlertBox, 'error', 'La persona debe tener al menos 13 años de edad para ser registrada en el sistema.');
+        setLoadingBtn(submitBtn, false);
+        inputFechaNac.focus();
+        return;
+      }
     }
 
     // Validar que ningún teléfono pertenezca a otra persona

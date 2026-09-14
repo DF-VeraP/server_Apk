@@ -567,7 +567,8 @@ function formatearTelefonos(listaTelefonos) {
 
 // Validación: Cédula SOLO números (4 a 15 dígitos); Nombres y Apellidos SOLO letras
 // Cada nuevo teléfono debe tener EXACTAMENTE 10 dígitos numéricos
-function validarCamposContacto({ cc, nombres, apellidos, contacto, esEdicion = false }) {
+// Fecha de nacimiento: opcional, pero si viene no puede ser futura ni menor a 13 años
+function validarCamposContacto({ cc, nombres, apellidos, contacto, fecha_nacimiento, esEdicion = false }) {
   if (!esEdicion) {
     if (!cc || !/^\d{4,15}$/.test(String(cc).trim())) {
       return 'La cédula (CC) es obligatoria y debe contener entre 4 y 15 dígitos numéricos.';
@@ -597,6 +598,39 @@ function validarCamposContacto({ cc, nombres, apellidos, contacto, esEdicion = f
   if (!apellidos || !soloLetrasRegex.test(String(apellidos).trim())) {
     return 'Los apellidos solo deben contener letras y espacios (no se permiten números).';
   }
+
+  if (fecha_nacimiento) {
+    const fnStr = String(fecha_nacimiento).split('T')[0].trim();
+    if (fnStr) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(fnStr)) {
+        return 'El formato de la fecha de nacimiento debe ser AAAA-MM-DD.';
+      }
+
+      const [y, m, d] = fnStr.split('-').map(Number);
+      const fechaNacDate = new Date(y, m - 1, d);
+
+      if (
+        fechaNacDate.getFullYear() !== y ||
+        fechaNacDate.getMonth() !== m - 1 ||
+        fechaNacDate.getDate() !== d
+      ) {
+        return 'La fecha de nacimiento ingresada no es válida.';
+      }
+
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+
+      if (fechaNacDate > hoy) {
+        return 'La fecha de nacimiento no puede ser una fecha futura.';
+      }
+
+      const fechaLimite13Anios = new Date(hoy.getFullYear() - 13, hoy.getMonth(), hoy.getDate());
+      if (fechaNacDate > fechaLimite13Anios) {
+        return 'La persona debe tener al menos 13 años de edad para ser registrada.';
+      }
+    }
+  }
+
   return null;
 }
 
@@ -621,7 +655,7 @@ app.post('/api/contactos', authMiddleware, async (req, res) => {
   const usuarioId = req.usuario.id;
 
   // Validación estricta de tipos de datos
-  const errorValidacion = validarCamposContacto({ cc, nombres, apellidos, contacto });
+  const errorValidacion = validarCamposContacto({ cc, nombres, apellidos, contacto, fecha_nacimiento });
   if (errorValidacion) {
     return res.status(400).json({ error: errorValidacion });
   }
@@ -744,7 +778,7 @@ app.put('/api/contactos/:cc', authMiddleware, async (req, res) => {
   const usuarioId = req.usuario.id;
 
   // Validación estricta
-  const errorValidacion = validarCamposContacto({ cc, nombres, apellidos, contacto, esEdicion: true });
+  const errorValidacion = validarCamposContacto({ cc, nombres, apellidos, contacto, fecha_nacimiento, esEdicion: true });
   if (errorValidacion) {
     return res.status(400).json({ error: errorValidacion });
   }
@@ -834,6 +868,7 @@ app.post('/api/contactos/sincronizar', authMiddleware, syncLimiter, async (req, 
             nombres: op.contacto.nombres,
             apellidos: op.contacto.apellidos,
             contacto: op.contacto.contacto,
+            fecha_nacimiento: op.contacto.fecha_nacimiento,
             esEdicion: true
           });
           if (errorVal) {
