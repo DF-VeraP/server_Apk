@@ -303,26 +303,10 @@
         </div>
         
         <div class="form-grid">
-          <div class="form-group">
+          <!-- Sección: Datos Principales (Cédula, Nombres, Apellidos) -->
+          <div class="form-group full-width">
             <label for="inputCc">Cédula de Ciudadanía (CC) *</label>
             <input type="text" id="inputCc" placeholder="Ej: 1004110014" required pattern="[0-9]{4,15}" inputmode="numeric" title="Entre 4 y 15 dígitos numéricos" autocomplete="off">
-          </div>
-
-          <div class="form-group full-width" id="phoneFormGroup">
-            <label id="phoneFieldLabel" for="inputContacto">Teléfono de Contacto (10 dígitos) *</label>
-            <div id="phonesChipsContainer" class="phones-chips-wrap hidden" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px;">
-              <!-- Tarjetas interactivas de cada teléfono (solo en edición) -->
-            </div>
-            
-            <div class="add-phone-row" style="display: flex; gap: 8px; align-items: center;">
-              <input type="tel" id="inputContacto" placeholder="Ej: 3001234567 (10 dígitos)" maxlength="10" inputmode="numeric" title="Exactamente 10 dígitos numéricos" style="flex: 1;" autocomplete="off">
-              <button type="button" id="btnAddPhoneToList" class="btn-secondary hidden" style="white-space: nowrap; padding: 0.5rem 0.85rem; font-size: 0.85rem;">
-                <i class="bi bi-plus-circle"></i> Agregar Teléfono
-              </button>
-            </div>
-            <small id="phoneHistoryHint" class="form-hint hidden" style="color: #94a3b8; margin-top: 4px; font-size: 0.8rem;">
-              Los números operan con regla FIFO: Posición 1 = más reciente. Puedes editar o corregir cualquier número con el lápiz.
-            </small>
           </div>
 
           <div class="form-group">
@@ -335,6 +319,27 @@
             <input type="text" id="inputApellidos" placeholder="Ej: Pérez Rodríguez" required pattern="[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+" title="Solo letras y espacios (sin números)" autocomplete="off">
           </div>
 
+          <!-- Sección: Gestión de Teléfonos (Botón siempre visible con icono de guardar) -->
+          <div class="form-group full-width" id="phoneFormGroup">
+            <label id="phoneFieldLabel" for="inputContacto">Teléfono de Contacto (10 dígitos) *</label>
+            
+            <div id="phonesChipsContainer" class="phones-chips-wrap hidden">
+              <!-- Teléfonos registrados en modo edición -->
+            </div>
+            
+            <div class="add-phone-row">
+              <input type="tel" id="inputContacto" placeholder="Ej: 3001234567 (10 dígitos)" maxlength="10" inputmode="numeric" title="Exactamente 10 dígitos numéricos" autocomplete="off">
+              <button type="button" id="btnAddPhoneToList" class="btn-phone-save hidden" title="Guardar teléfono">
+                <i class="bi bi-floppy"></i>
+                <span>Guardar</span>
+              </button>
+            </div>
+            <small id="phoneHistoryHint" class="form-hint hidden">
+              Historial de teléfonos (Posición 1: más reciente). Puedes agregar más números o editar los existentes.
+            </small>
+          </div>
+
+          <!-- Sección: Información Complementaria -->
           <div class="form-group">
             <label for="inputProfesion">Profesión / Ocupación</label>
             <input type="text" id="inputProfesion" placeholder="Ej: Ingeniero de Sistemas" autocomplete="off">

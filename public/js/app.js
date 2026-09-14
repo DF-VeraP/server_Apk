@@ -845,8 +845,7 @@
     const limpio = String(nuevo).replace(/\D/g, '');
     if (!limpio) return actuales;
     const sinDup = actuales.filter(t => t !== limpio);
-    const lista = [limpio, ...sinDup];
-    return lista.slice(0, 3);
+    return [limpio, ...sinDup];
   }
 
   function renderizarPhonesChips() {
@@ -862,16 +861,16 @@
       return;
     }
 
-    // Modo edición: habilitar gestión de historial FIFO
+    // Modo edición: habilitar gestión de historial de teléfonos
     phonesChipsContainer.classList.remove('hidden');
     if (phoneHistoryHint) phoneHistoryHint.classList.remove('hidden');
-    if (phoneFieldLabel) phoneFieldLabel.textContent = 'Teléfonos Registrados (FIFO máx 3) *';
+    if (phoneFieldLabel) phoneFieldLabel.textContent = 'Teléfonos Registrados *';
 
     if (modalPhonesList.length === 0) {
       const emptyDiv = document.createElement('div');
-      emptyDiv.style.color = '#94a3b8';
-      emptyDiv.style.fontSize = '0.85rem';
-      emptyDiv.textContent = 'Ningún teléfono registrado aún. Digita un número de 10 dígitos y pulsa "+ Agregar Teléfono".';
+      emptyDiv.style.color = 'var(--text-subtle)';
+      emptyDiv.style.fontSize = '12.5px';
+      emptyDiv.textContent = 'Ningún teléfono registrado aún. Escribe el número y haz clic en "Guardar".';
       phonesChipsContainer.appendChild(emptyDiv);
       if (btnAddPhoneToList) btnAddPhoneToList.classList.remove('hidden');
       return;
@@ -879,27 +878,21 @@
 
     modalPhonesList.forEach((tel, idx) => {
       const chip = document.createElement('div');
-      chip.style.display = 'flex';
-      chip.style.alignItems = 'center';
-      chip.style.justifyContent = 'space-between';
-      chip.style.background = '#1e293b';
-      chip.style.border = '1px solid #334155';
-      chip.style.borderRadius = '6px';
-      chip.style.padding = '6px 10px';
+      chip.className = 'phone-chip-item';
 
-      const posLabel = idx === 0 ? 'Pos 1 (Más reciente)' : (idx === 1 ? 'Pos 2 (Anterior)' : 'Pos 3 (Más antiguo)');
+      const posLabel = idx === 0 ? 'Principal' : `Tel ${idx + 1}`;
 
       chip.innerHTML = `
-        <div style="display:flex; align-items:center; gap:8px;">
-          <span style="font-size:0.75rem; background:#0284c7; color:#fff; padding:2px 6px; border-radius:4px;">${posLabel}</span>
-          <strong style="color:#f8fafc; font-size:0.95rem;">${tel}</strong>
+        <div class="phone-chip-info">
+          <span class="phone-chip-tag">${posLabel}</span>
+          <span class="phone-chip-number">${tel}</span>
         </div>
-        <div style="display:flex; gap:6px;">
-          <button type="button" class="btn-chip-edit" data-idx="${idx}" title="Modificar o corregir este número" style="background:#475569; color:#fff; border:none; padding:4px 8px; border-radius:4px; font-size:0.8rem; cursor:pointer;">
-            <i class="bi bi-pencil"></i> Corregir
+        <div class="phone-chip-actions">
+          <button type="button" class="btn-chip-action btn-chip-edit" data-idx="${idx}" title="Corregir este número">
+            Editar
           </button>
-          <button type="button" class="btn-chip-delete" data-idx="${idx}" title="Quitar este teléfono" style="background:#e11d48; color:#fff; border:none; padding:4px 8px; border-radius:4px; font-size:0.8rem; cursor:pointer;">
-            <i class="bi bi-x-lg"></i>
+          <button type="button" class="btn-chip-action btn-chip-delete" data-idx="${idx}" title="Quitar este teléfono">
+            &times;
           </button>
         </div>
       `;
@@ -924,12 +917,10 @@
       phonesChipsContainer.appendChild(chip);
     });
 
+    // El botón de agregar teléfono NUNCA se oculta en modo edición:
+    // Permite seguir guardando teléfonos siempre
     if (btnAddPhoneToList) {
-      if (modalPhonesList.length >= 3) {
-        btnAddPhoneToList.classList.add('hidden');
-      } else {
-        btnAddPhoneToList.classList.remove('hidden');
-      }
+      btnAddPhoneToList.classList.remove('hidden');
     }
   }
 
