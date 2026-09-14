@@ -142,6 +142,11 @@ async function inicializarBaseDeDatos() {
       await pool.query('ALTER TABLE public.usuarios ALTER COLUMN token_expira TYPE TIMESTAMPTZ;');
     } catch (_) {}
 
+    try {
+      // Asegurar que la columna contacto soporte hasta 3 o más teléfonos con comas y espacios sin límite de 20 caracteres
+      await pool.query('ALTER TABLE public.contactos ALTER COLUMN contacto TYPE VARCHAR(150);');
+    } catch (_) {}
+
     console.log('[OK] Tablas de base de datos verificadas e inicializadas correctamente.');
   } catch (err) {
     console.error('[WARN] Error al inicializar tablas en PostgreSQL:', err.message);
@@ -804,12 +809,9 @@ app.put('/api/contactos/:cc', authMiddleware, async (req, res) => {
       }
     }
 
-    // Calcular cola FIFO con los teléfonos existentes y los entrantes
-    const telsActuales = parsearTelefonos(existe.rows[0].contacto);
-    let colaResultante = [...telsActuales];
-    for (const nTel of nuevosTels.reverse()) {
-      colaResultante = agregarTelefonoFIFO(colaResultante, nTel);
-    }
+    // En edición, el cliente envía la lista exacta deseada (incluyendo adiciones, correcciones o eliminaciones)
+    // Nos aseguramos de mantener un máximo de 3 teléfonos con regla FIFO
+    const colaResultante = nuevosTels.slice(0, 3);
     const contactoStr = formatearTelefonos(colaResultante);
 
     const result = await pool.query(
@@ -822,8 +824,8 @@ app.put('/api/contactos/:cc', authMiddleware, async (req, res) => {
 
     res.json(result.rows[0]);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Error al actualizar contacto' });
+    console.error('Error al actualizar contacto:', err);
+    res.status(500).json({ error: 'Error al actualizar contacto: ' + (err.message || 'Error interno') });
   }
 });
 
