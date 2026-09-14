@@ -115,6 +115,7 @@
     detectMobileDevice();
     checkNetworkStatus();
     setupEventListeners();
+    configurarAutocompletadoModal();
     handleUrlHashRouting();
     actualizarContadorPendientes();
 
@@ -788,10 +789,96 @@
   }
 
   // =========================================================================
-  // 9. MODAL AGREGAR / EDITAR
+  // 9. MODAL AGREGAR / EDITAR CON AUTOCOMPLETADO Y FIFO DE 3 TELÉFONOS
   // =========================================================================
+  const modalAutofillAlert = document.getElementById('modalAutofillAlert');
+  const modalAutofillText = document.getElementById('modalAutofillText');
+  const phoneHistoryHint = document.getElementById('phoneHistoryHint');
+  let autofillInProgress = false;
+
+  function parsearTelefonosJs(str) {
+    if (!str) return [];
+    return String(str).split(/[,;/|\s]+/).map(t => t.replace(/\D/g, '')).filter(Boolean);
+  }
+
+  function agregarTelefonoFIFOJs(actuales, nuevo) {
+    const limpio = String(nuevo).replace(/\D/g, '');
+    if (!limpio) return actuales;
+    const sinDup = actuales.filter(t => t !== limpio);
+    const lista = [limpio, ...sinDup];
+    return lista.slice(0, 3);
+  }
+
+  function configurarAutocompletadoModal() {
+    inputCc.addEventListener('input', () => {
+      if (autofillInProgress || modalMode.value !== 'create') return;
+      const ccVal = inputCc.value.trim();
+      if (ccVal.length >= 4) {
+        const coincidencia = contactsCache.find(c => String(c.cc).trim() === ccVal);
+        if (coincidencia) {
+          aplicarAutocompletadoModal(coincidencia, false);
+        } else {
+          limpiarAutocompletadoModal();
+        }
+      } else {
+        limpiarAutocompletadoModal();
+      }
+    });
+
+    inputContacto.addEventListener('input', () => {
+      if (autofillInProgress || modalMode.value !== 'create') return;
+      const telVal = inputContacto.value.trim().replace(/\D/g, '');
+      if (telVal.length === 10) {
+        const coincidencia = contactsCache.find(c => {
+          const tels = parsearTelefonosJs(c.contacto);
+          return tels.includes(telVal);
+        });
+        if (coincidencia) {
+          aplicarAutocompletadoModal(coincidencia, true);
+        }
+      }
+    });
+  }
+
+  function aplicarAutocompletadoModal(c, porTelefono = false) {
+    autofillInProgress = true;
+    if (porTelefono) {
+      inputCc.value = c.cc;
+    }
+    inputNombres.value = c.nombres || '';
+    inputApellidos.value = c.apellidos || '';
+    inputProfesion.value = c.profesion || '';
+    inputDireccion.value = c.direccion || '';
+    if (c.fecha_nacimiento) {
+      inputFechaNac.value = c.fecha_nacimiento.split('T')[0];
+    }
+
+    const tels = parsearTelefonosJs(c.contacto);
+    if (phoneHistoryHint && tels.length > 0) {
+      phoneHistoryHint.innerHTML = `<strong>Historial actual:</strong> ${tels.map((t, idx) => `[Pos ${idx+1}: ${t}]`).join(' ')}`;
+      phoneHistoryHint.style.display = 'block';
+    }
+
+    if (modalAutofillAlert) {
+      modalAutofillAlert.classList.remove('hidden');
+      if (modalAutofillText) {
+        modalAutofillText.textContent = `¡Persona identificada (${c.nombres} ${c.apellidos})! Datos autocompletados. Ingresa un nuevo teléfono de 10 dígitos para añadirlo al historial (FIFO máx 3).`;
+      }
+    }
+    autofillInProgress = false;
+  }
+
+  function limpiarAutocompletadoModal() {
+    if (modalAutofillAlert) modalAutofillAlert.classList.add('hidden');
+    if (phoneHistoryHint) {
+      phoneHistoryHint.textContent = '';
+      phoneHistoryHint.style.display = 'none';
+    }
+  }
+
   function abrirModalContacto(mode, contacto = null) {
     modalAlertBox.classList.add('hidden');
+    limpiarAutocompletadoModal();
     contactForm.reset();
     modalMode.value = mode;
 
@@ -810,6 +897,12 @@
       if (contacto.fecha_nacimiento) {
         inputFechaNac.value = contacto.fecha_nacimiento.split('T')[0];
       }
+
+      const tels = parsearTelefonosJs(contacto.contacto);
+      if (phoneHistoryHint && tels.length > 0) {
+        phoneHistoryHint.innerHTML = `<strong>Historial actual:</strong> ${tels.map((t, idx) => `[Pos ${idx+1}: ${t}]`).join(' ')}`;
+        phoneHistoryHint.style.display = 'block';
+      }
     }
 
     contactModal.classList.remove('hidden');
@@ -817,6 +910,7 @@
 
   function cerrarModalContacto() {
     contactModal.classList.add('hidden');
+    limpiarAutocompletadoModal();
     contactForm.reset();
   }
 
@@ -837,19 +931,29 @@
       direccion: inputDireccion.value.trim() || null,
     };
 
-    // Validaciones estrictas: Solo números en CC y Teléfono; Solo letras y espacios en Nombres y Apellidos
-    if (!/^\d+$/.test(contactoData.cc)) {
-      mostrarAlerta(modalAlertBox, 'error', 'La cédula (CC) solo debe contener números.');
+    // Validaciones estrictas: Solo números en CC (4-15); Teléfono exactamente 10 dígitos; Solo letras en nombres
+    if (!/^\d{4,15}$/.test(contactoData.cc)) {
+      mostrarAlerta(modalAlertBox, 'error', 'La cédula (CC) debe contener entre 4 y 15 dígitos numéricos.');
       setLoadingBtn(submitBtn, false);
       inputCc.focus();
       return;
     }
 
-    if (!/^\d+$/.test(contactoData.contacto)) {
-      mostrarAlerta(modalAlertBox, 'error', 'El teléfono / celular solo debe contener números.');
+    const telsIngresados = parsearTelefonosJs(contactoData.contacto);
+    if (telsIngresados.length === 0) {
+      mostrarAlerta(modalAlertBox, 'error', 'El número telefónico es obligatorio.');
       setLoadingBtn(submitBtn, false);
       inputContacto.focus();
       return;
+    }
+
+    for (const t of telsIngresados) {
+      if (!/^\d{10}$/.test(t)) {
+        mostrarAlerta(modalAlertBox, 'error', `El teléfono "${t}" es inválido. Debe tener exactamente 10 dígitos numéricos.`);
+        setLoadingBtn(submitBtn, false);
+        inputContacto.focus();
+        return;
+      }
     }
 
     const soloLetrasRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/;
@@ -867,45 +971,46 @@
       return;
     }
 
+    // Validar que el teléfono no pertenezca a otra persona
+    const nuevoTel = telsIngresados[0];
+    const telEnOtro = contactsCache.find(c => {
+      const tels = parsearTelefonosJs(c.contacto);
+      return tels.includes(nuevoTel) && String(c.cc).trim() !== String(contactoData.cc).trim();
+    });
+    if (telEnOtro) {
+      mostrarAlerta(modalAlertBox, 'error', `El número ${nuevoTel} ya pertenece a otro contacto (${telEnOtro.nombres} ${telEnOtro.apellidos}).`);
+      setLoadingBtn(submitBtn, false);
+      inputContacto.focus();
+      return;
+    }
+
     // Caso Offline
     if (!navigator.onLine) {
-      if (mode === 'create') {
-        const existeCc = contactsCache.some(c => String(c.cc).trim() === String(contactoData.cc).trim());
-        if (existeCc) {
-          mostrarAlerta(modalAlertBox, 'error', 'Ya tienes un contacto registrado con esa cédula.');
-          setLoadingBtn(submitBtn, false);
-          inputCc.focus();
-          return;
-        }
-      }
+      const idxExistente = contactsCache.findIndex(c => String(c.cc).trim() === String(contactoData.cc).trim());
+      
+      if (idxExistente !== -1) {
+        // La persona ya existe: aplicar FIFO de 3 teléfonos y actualizar datos sin duplicar
+        const personaActual = contactsCache[idxExistente];
+        const telsActuales = parsearTelefonosJs(personaActual.contacto);
+        const cola = agregarTelefonoFIFOJs(telsActuales, nuevoTel);
+        contactoData.contacto = cola.join(', ');
 
-      // Validar si ya existe ese teléfono en modo offline
-      const existeTel = contactsCache.some(c => {
-        const mismoTel = String(c.contacto).trim() === String(contactoData.contacto).trim();
-        if (mode === 'create') return mismoTel;
-        return mismoTel && String(c.cc).trim() !== String(contactoData.cc).trim();
-      });
-      if (existeTel) {
-        mostrarAlerta(modalAlertBox, 'error', 'Ya tienes un contacto registrado con ese número telefónico.');
-        setLoadingBtn(submitBtn, false);
-        inputContacto.focus();
-        return;
-      }
-
-      if (mode === 'create') {
+        contactsCache[idxExistente] = { ...personaActual, ...contactoData };
+        encolarOperacionSync('editar', contactoData);
+        mostrarToast('warning', 'Modo Offline: Teléfono agregado a la persona existente. Se sincronizará al reconectar.');
+      } else {
+        // Persona nueva
+        const cola = agregarTelefonoFIFOJs([], nuevoTel);
+        contactoData.contacto = cola.join(', ');
         contactsCache.unshift(contactoData);
         encolarOperacionSync('crear', contactoData);
-      } else {
-        const idx = contactsCache.findIndex(c => String(c.cc).trim() === String(contactoData.cc).trim());
-        if (idx !== -1) contactsCache[idx] = { ...contactsCache[idx], ...contactoData };
-        encolarOperacionSync('editar', contactoData);
+        mostrarToast('warning', 'Modo Offline: Contacto guardado localmente. Se sincronizará al reconectar.');
       }
 
       localStorage.setItem('nexus_contacts_cache', JSON.stringify(contactsCache));
       renderizarTabla(contactsCache);
       cerrarModalContacto();
       setLoadingBtn(submitBtn, false);
-      mostrarToast('warning', 'Guardado localmente en modo Offline. Se sincronizará al reconectar.');
       checkNetworkStatus();
       return;
     }
@@ -931,7 +1036,7 @@
         return;
       }
 
-      mostrarToast('success', mode === 'create' ? 'Contacto creado exitosamente' : 'Contacto actualizado');
+      mostrarToast('success', 'Operación completada con éxito.');
       cerrarModalContacto();
       cargarContactos(true);
 

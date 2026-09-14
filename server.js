@@ -520,16 +520,76 @@ app.post('/api/auth/restablecer-password', async (req, res) => {
 // ENDPOINTS CRUD DE CONTACTOS (AISLADOS POR USUARIO)
 // ============================================
 
-// Validación estricta: Cédula y Teléfono SOLO números; Nombres y Apellidos SOLO letras
+// ============================================
+// FUNCIONES DE GESTIÓN FIFO DE TELÉFONOS (MÁXIMO 3, EXACTAMENTE 10 DÍGITOS)
+// ============================================
+
+/**
+ * Parsea un string de contacto o array y retorna una lista de teléfonos limpios (solo dígitos).
+ */
+function parsearTelefonos(contactoRaw) {
+  if (!contactoRaw) return [];
+  if (Array.isArray(contactoRaw)) {
+    return contactoRaw.map(t => String(t).replace(/\D/g, '')).filter(Boolean);
+  }
+  // Puede venir separado por comas, barras, espacios o guiones
+  return String(contactoRaw)
+    .split(/[,;\/|]+/)
+    .map(t => t.replace(/\D/g, ''))
+    .filter(Boolean);
+}
+
+/**
+ * Aplica comportamiento FIFO:
+ * Posición 1 (índice 0): más reciente.
+ * Posición 2 (índice 1): intermedio.
+ * Posición 3 (índice 2): más antiguo.
+ * Máximo 3 teléfonos. Si se agrega un 4º, se descarta el de la posición 3.
+ * No permite teléfonos duplicados para la misma persona.
+ */
+function agregarTelefonoFIFO(telefonosActuales, nuevoTelefono) {
+  const telLimpio = String(nuevoTelefono).replace(/\D/g, '');
+  if (!telLimpio) return telefonosActuales;
+
+  // Filtrar si ya existe exactamente el mismo teléfono para no duplicarlo
+  const sinDuplicado = telefonosActuales.filter(t => t !== telLimpio);
+
+  // El nuevo entra en la posición 1 (índice 0)
+  const actualizada = [telLimpio, ...sinDuplicado];
+
+  // Conservar máximo 3
+  return actualizada.slice(0, 3);
+}
+
+function formatearTelefonos(listaTelefonos) {
+  return listaTelefonos.join(', ');
+}
+
+// Validación: Cédula SOLO números (4 a 15 dígitos); Nombres y Apellidos SOLO letras
+// Cada nuevo teléfono debe tener EXACTAMENTE 10 dígitos numéricos
 function validarCamposContacto({ cc, nombres, apellidos, contacto, esEdicion = false }) {
   if (!esEdicion) {
-    if (!cc || !/^\d+$/.test(String(cc).trim())) {
-      return 'La cédula (CC) es obligatoria y solo debe contener números.';
+    if (!cc || !/^\d{4,15}$/.test(String(cc).trim())) {
+      return 'La cédula (CC) es obligatoria y debe contener entre 4 y 15 dígitos numéricos.';
     }
   }
-  if (!contacto || !/^\d+$/.test(String(contacto).trim())) {
-    return 'El teléfono / celular es obligatorio y solo debe contener números.';
+
+  if (!contacto) {
+    return 'El número telefónico es obligatorio.';
   }
+
+  const tels = parsearTelefonos(contacto);
+  if (tels.length === 0) {
+    return 'Debes ingresar al menos un número telefónico válido.';
+  }
+
+  // Validar cada número telefónico ingresado: exactamente 10 dígitos numéricos
+  for (const tel of tels) {
+    if (!/^\d{10}$/.test(tel)) {
+      return `El teléfono "${tel}" es inválido. Debe tener exactamente 10 dígitos numéricos.`;
+    }
+  }
+
   const soloLetrasRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/;
   if (!nombres || !soloLetrasRegex.test(String(nombres).trim())) {
     return 'Los nombres solo deben contener letras y espacios (no se permiten números).';
@@ -539,6 +599,7 @@ function validarCamposContacto({ cc, nombres, apellidos, contacto, esEdicion = f
   }
   return null;
 }
+
 
 // GET - Obtener todos los contactos del usuario autenticado
 app.get('/api/contactos', authMiddleware, async (req, res) => {
@@ -554,7 +615,7 @@ app.get('/api/contactos', authMiddleware, async (req, res) => {
   }
 });
 
-// POST - Agregar un nuevo contacto para el usuario autenticado
+// POST - Agregar o actualizar teléfono de un contacto existente (comportamiento FIFO de 3 teléfonos)
 app.post('/api/contactos', authMiddleware, async (req, res) => {
   const { cc, nombres, apellidos, contacto, direccion, fecha_nacimiento, profesion } = req.body;
   const usuarioId = req.usuario.id;
@@ -565,39 +626,64 @@ app.post('/api/contactos', authMiddleware, async (req, res) => {
     return res.status(400).json({ error: errorValidacion });
   }
 
+  const nuevosTels = parsearTelefonos(contacto);
+  const nuevoTel = nuevosTels[0];
+
   try {
-    // Verificar si ya existe esa cédula en los contactos de ESTE usuario
-    const existeCc = await pool.query(
+    // 1. Verificar si ya existe esa cédula en los contactos de ESTE usuario
+    const existePersona = await pool.query(
       'SELECT * FROM contactos WHERE usuario_id = $1 AND cc = $2 AND eliminado_en IS NULL',
       [usuarioId, cc]
     );
-    if (existeCc.rows.length > 0) {
-      return res.status(400).json({ error: 'Ya tienes un contacto registrado con esa cédula' });
+
+    // 2. Verificar que el teléfono no pertenezca a OTRA persona diferente
+    const existeTelEnOtro = await pool.query(
+      'SELECT cc FROM contactos WHERE usuario_id = $1 AND cc != $2 AND eliminado_en IS NULL AND contacto LIKE $3',
+      [usuarioId, cc, `%${nuevoTel}%`]
+    );
+    if (existeTelEnOtro.rows.length > 0) {
+      return res.status(400).json({ error: 'Ese número telefónico ya pertenece a otro contacto registrado.' });
     }
 
-    // Verificar si ya existe ese teléfono en los contactos de ESTE usuario
-    const existeTel = await pool.query(
-      'SELECT * FROM contactos WHERE usuario_id = $1 AND contacto = $2 AND eliminado_en IS NULL',
-      [usuarioId, contacto]
-    );
-    if (existeTel.rows.length > 0) {
-      return res.status(400).json({ error: 'Ya tienes un contacto registrado con ese número telefónico' });
+    if (existePersona.rows.length > 0) {
+      // La persona ya existe: aplicar regla FIFO a sus teléfonos y actualizar datos sin duplicar la persona
+      const personaExistente = existePersona.rows[0];
+      const telsActuales = parsearTelefonos(personaExistente.contacto);
+      const telsActualizados = agregarTelefonoFIFO(telsActuales, nuevoTel);
+      const contactoStr = formatearTelefonos(telsActualizados);
+
+      const updateRes = await pool.query(
+        `UPDATE contactos 
+         SET nombres = $1, apellidos = $2, contacto = $3, 
+             direccion = COALESCE($4, direccion), 
+             fecha_nacimiento = COALESCE($5, fecha_nacimiento), 
+             profesion = COALESCE($6, profesion), 
+             fecha_actualizacion = CURRENT_TIMESTAMP
+         WHERE usuario_id = $7 AND cc = $8 RETURNING *`,
+        [nombres || personaExistente.nombres, apellidos || personaExistente.apellidos, contactoStr, direccion || null, fecha_nacimiento || null, profesion || null, usuarioId, cc]
+      );
+
+      return res.status(200).json(updateRes.rows[0]);
+    } else {
+      // Es una persona nueva: guardar con su primer teléfono (o lista de teléfonos iniciales hasta 3)
+      const telsActualizados = agregarTelefonoFIFO([], nuevoTel);
+      const contactoStr = formatearTelefonos(telsActualizados);
+
+      const insertRes = await pool.query(
+        `INSERT INTO contactos (cc, nombres, apellidos, contacto, direccion, fecha_nacimiento, profesion, usuario_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+        [cc, nombres, apellidos, contactoStr, direccion || null, fecha_nacimiento || null, profesion || null, usuarioId]
+      );
+
+      return res.status(201).json(insertRes.rows[0]);
     }
-
-    const result = await pool.query(
-      `INSERT INTO contactos (cc, nombres, apellidos, contacto, direccion, fecha_nacimiento, profesion, usuario_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-      [cc, nombres, apellidos, contacto, direccion || null, fecha_nacimiento || null, profesion || null, usuarioId]
-    );
-
-    res.status(201).json(result.rows[0]);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Error al agregar contacto' });
+    console.error('Error al registrar contacto:', err);
+    res.status(500).json({ error: 'Error al procesar el contacto' });
   }
 });
 
-// GET - Buscar contactos por nombre, apellido o cédula (del usuario)
+// GET - Buscar contactos por nombre, apellido, cédula o teléfono
 app.get('/api/contactos/buscar', authMiddleware, async (req, res) => {
   const { q } = req.query;
   const usuarioId = req.usuario.id;
@@ -651,7 +737,7 @@ app.get('/api/contactos/:cc', authMiddleware, async (req, res) => {
   }
 });
 
-// PUT - Actualizar un contacto existente (del usuario)
+// PUT - Actualizar un contacto existente (del usuario) con soporte FIFO
 app.put('/api/contactos/:cc', authMiddleware, async (req, res) => {
   const { cc } = req.params;
   const { nombres, apellidos, contacto, direccion, fecha_nacimiento, profesion } = req.body;
@@ -672,21 +758,32 @@ app.put('/api/contactos/:cc', authMiddleware, async (req, res) => {
       return res.status(404).json({ error: 'Contacto no encontrado' });
     }
 
-    // Validar que el teléfono no pertenezca ya a otro contacto del usuario
-    const existeTel = await pool.query(
-      'SELECT cc FROM contactos WHERE usuario_id = $1 AND contacto = $2 AND cc != $3 AND eliminado_en IS NULL',
-      [usuarioId, contacto, cc]
-    );
-    if (existeTel.rows.length > 0) {
-      return res.status(400).json({ error: 'Ya tienes otro contacto registrado con ese número telefónico' });
+    const nuevosTels = parsearTelefonos(contacto);
+    // Validar que ninguno de los números pertenezca a otra persona
+    for (const tel of nuevosTels) {
+      const existeTel = await pool.query(
+        'SELECT cc FROM contactos WHERE usuario_id = $1 AND cc != $2 AND eliminado_en IS NULL AND contacto LIKE $3',
+        [usuarioId, cc, `%${tel}%`]
+      );
+      if (existeTel.rows.length > 0) {
+        return res.status(400).json({ error: `El número telefónico ${tel} ya pertenece a otro contacto.` });
+      }
     }
+
+    // Calcular cola FIFO con los teléfonos existentes y los entrantes
+    const telsActuales = parsearTelefonos(existe.rows[0].contacto);
+    let colaResultante = [...telsActuales];
+    for (const nTel of nuevosTels.reverse()) {
+      colaResultante = agregarTelefonoFIFO(colaResultante, nTel);
+    }
+    const contactoStr = formatearTelefonos(colaResultante);
 
     const result = await pool.query(
       `UPDATE contactos 
        SET nombres = $1, apellidos = $2, contacto = $3, direccion = $4, 
            fecha_nacimiento = $5, profesion = $6, fecha_actualizacion = CURRENT_TIMESTAMP
        WHERE usuario_id = $7 AND cc = $8 RETURNING *`,
-      [nombres, apellidos, contacto, direccion, fecha_nacimiento, profesion, usuarioId, cc]
+      [nombres, apellidos, contactoStr, direccion || null, fecha_nacimiento || null, profesion || null, usuarioId, cc]
     );
 
     res.json(result.rows[0]);
@@ -729,51 +826,63 @@ app.post('/api/contactos/sincronizar', authMiddleware, syncLimiter, async (req, 
   try {
     if (Array.isArray(operacionesPendientes) && operacionesPendientes.length > 0) {
       for (const op of operacionesPendientes) {
+        if (!op.contacto || !op.contacto.cc) continue;
+
         if (op.tipo === 'crear' || op.tipo === 'editar') {
-          if (!op.contacto) continue;
           const errorVal = validarCamposContacto({
             cc: op.contacto.cc,
             nombres: op.contacto.nombres,
             apellidos: op.contacto.apellidos,
             contacto: op.contacto.contacto,
-            esEdicion: op.tipo === 'editar'
+            esEdicion: true
           });
           if (errorVal) {
             console.warn(`[SYNC] Operación ${op.tipo} omitida por validación: ${errorVal}`);
             continue;
           }
 
-          // Validar que el teléfono no esté duplicado con OTRO contacto
-          const dupTel = await pool.query(
-            'SELECT cc FROM contactos WHERE usuario_id = $1 AND contacto = $2 AND cc != $3 AND eliminado_en IS NULL',
-            [usuarioId, op.contacto.contacto, op.contacto.cc]
+          const nuevosTels = parsearTelefonos(op.contacto.contacto);
+          
+          // Consultar si ya existe el contacto en base de datos
+          const existente = await pool.query(
+            'SELECT * FROM contactos WHERE usuario_id = $1 AND cc = $2 AND eliminado_en IS NULL',
+            [usuarioId, op.contacto.cc]
           );
-          if (dupTel.rows.length > 0) {
-            console.warn(`[SYNC] Teléfono duplicado para CC ${op.contacto.cc} con contacto existente CC ${dupTel.rows[0].cc}. Operación omitida.`);
-            continue;
-          }
-        }
 
-        if (op.tipo === 'crear') {
-          const { cc, nombres, apellidos, contacto, direccion, fecha_nacimiento, profesion } = op.contacto;
-          await pool.query(
-            `INSERT INTO contactos (cc, nombres, apellidos, contacto, direccion, fecha_nacimiento, profesion, usuario_id)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-             ON CONFLICT (usuario_id, cc) DO UPDATE 
-             SET nombres = EXCLUDED.nombres, apellidos = EXCLUDED.apellidos, contacto = EXCLUDED.contacto, 
-                 direccion = EXCLUDED.direccion, fecha_nacimiento = EXCLUDED.fecha_nacimiento, profesion = EXCLUDED.profesion, 
-                 fecha_actualizacion = CURRENT_TIMESTAMP`,
-            [cc, nombres, apellidos, contacto, direccion || null, fecha_nacimiento || null, profesion || null, usuarioId]
-          );
-        } else if (op.tipo === 'editar') {
-          const { cc, nombres, apellidos, contacto, direccion, fecha_nacimiento, profesion } = op.contacto;
-          await pool.query(
-            `UPDATE contactos 
-             SET nombres = $1, apellidos = $2, contacto = $3, direccion = $4, 
-                 fecha_nacimiento = $5, profesion = $6, fecha_actualizacion = CURRENT_TIMESTAMP
-             WHERE usuario_id = $7 AND cc = $8`,
-            [nombres, apellidos, contacto, direccion, fecha_nacimiento, profesion, usuarioId, cc]
-          );
+          if (existente.rows.length > 0) {
+            // Ya existe: Fusionar teléfonos aplicando FIFO (máximo 3)
+            let telsAcumulados = parsearTelefonos(existente.rows[0].contacto);
+            for (const nTel of nuevosTels.reverse()) {
+              telsAcumulados = agregarTelefonoFIFO(telsAcumulados, nTel);
+            }
+            const contactoStr = formatearTelefonos(telsAcumulados);
+
+            await pool.query(
+              `UPDATE contactos 
+               SET nombres = COALESCE($1, nombres), 
+                   apellidos = COALESCE($2, apellidos), 
+                   contacto = $3, 
+                   direccion = COALESCE($4, direccion), 
+                   fecha_nacimiento = COALESCE($5, fecha_nacimiento), 
+                   profesion = COALESCE($6, profesion), 
+                   fecha_actualizacion = CURRENT_TIMESTAMP
+               WHERE usuario_id = $7 AND cc = $8`,
+              [op.contacto.nombres, op.contacto.apellidos, contactoStr, op.contacto.direccion || null, op.contacto.fecha_nacimiento || null, op.contacto.profesion || null, usuarioId, op.contacto.cc]
+            );
+          } else {
+            // No existe: Insertar nuevo
+            let telsAcumulados = [];
+            for (const nTel of nuevosTels.reverse()) {
+              telsAcumulados = agregarTelefonoFIFO(telsAcumulados, nTel);
+            }
+            const contactoStr = formatearTelefonos(telsAcumulados);
+
+            await pool.query(
+              `INSERT INTO contactos (cc, nombres, apellidos, contacto, direccion, fecha_nacimiento, profesion, usuario_id)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+              [op.contacto.cc, op.contacto.nombres, op.contacto.apellidos, contactoStr, op.contacto.direccion || null, op.contacto.fecha_nacimiento || null, op.contacto.profesion || null, usuarioId]
+            );
+          }
         } else if (op.tipo === 'eliminar') {
           await pool.query('DELETE FROM contactos WHERE usuario_id = $1 AND cc = $2', [usuarioId, op.contacto.cc]);
         }
@@ -796,6 +905,7 @@ app.post('/api/contactos/sincronizar', authMiddleware, syncLimiter, async (req, 
     res.status(500).json({ error: 'Error durante la sincronización' });
   }
 });
+
 
 // ============================================
 // DESCARGA DE APK PARA DISPOSITIVOS MÓVILES
